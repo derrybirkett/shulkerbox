@@ -19,3 +19,11 @@ Thumbs.db
 # User-specific
 .local/
 .cache/
+
+# Personal notes (remove this line if you want to version control your notes)
+notes/
+!notes/.gitkeep
+!notes/README.md
+
+# Local settings
+.claude/settings.local.json

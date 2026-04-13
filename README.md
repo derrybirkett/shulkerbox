@@ -22,11 +22,12 @@ Shulkerbox is a centralized, tool-agnostic repository that stores all reusable d
 ```
 shulkerbox/
 ├── skills/           # LLM skills and workflows
+├── agents/           # Custom agent definitions
 ├── hooks/            # Event-driven shell hooks
 ├── scripts/          # Automation and utility scripts
-├── agents/           # Custom agent definitions
+├── notes/            # Project-specific notes (inbox, activity log, insights)
 ├── plugins/          # Tool extensions
-├── templates/        # Project templates
+├── templates/        # Project templates and scaffolding
 ├── configs/          # Shared configurations
 ├── library/          # Reference materials and documentation links
 └── docs/             # Documentation and guides
@@ -127,13 +128,22 @@ wrap-up
 - **[Subagents Guide](docs/SUBAGENTS.md)** - When and how to use isolated workers
 - **[Library](library/)** - Curated reference materials and patterns
 
+## Project Notes
+
+Shulkerbox includes a project-scoped notes system:
+
+- **[notes/](notes/)** - Activity log, inbox, insights, friction log (git-ignored by default)
+- **[templates/notes/](templates/notes/)** - Note templates for new projects
+
+Skills like `wrap-up`, `note-that`, and `weekly-review` interact with `notes/` to maintain project context.
+
 ## Templates
 
 Start new projects with our templates:
 
 - **[CLAUDE.md](templates/CLAUDE.md)** - Project conventions and always-on context
 - **[.claude/rules/](templates/.claude/rules/)** - Path-specific guidelines (load only when working with matching files)
-- **[notes/](templates/notes/)** - Personal knowledge management system
+- **[notes/ templates](templates/notes/)** - Copy to new projects for note-taking structure
 
 ## Contributing
 
