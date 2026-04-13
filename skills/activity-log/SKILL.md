@@ -14,9 +14,9 @@ This skill maintains and queries a running log of work activity, auto-populated 
 
 ## Log location
 
-```
-~/Projects/skills/notes/activity-log.md
-```
+The activity log is stored in `notes/activity-log.md`:
+- **Project-scoped**: If the current repo has a `notes/` directory, use `./notes/activity-log.md`
+- **Global fallback**: Otherwise use `~/Projects/skills/notes/activity-log.md`
 
 Each entry is appended automatically on every `git commit` across all repos (requires global hook — see setup below).
 

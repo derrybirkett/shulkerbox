@@ -20,18 +20,20 @@ The ritual that makes the moleskine self-improving. Run once a week — Friday a
 
 ## Step 1 — Gather context
 
+**Notes location:** Use `./notes/` in the current repo if it exists, otherwise fall back to `~/Projects/skills/notes/`.
+
 Read these files silently before asking anything:
 
 | File | Purpose |
 |---|---|
-| `~/Projects/skills/notes/activity-log.md` | What was worked on — filter to the past 7 days |
-| `~/Projects/skills/notes/inbox.md` | Unprocessed captures — ideas, snippets, observations |
-| `~/Projects/skills/notes/friction.md` | Recurring pain points flagged during the week |
-| `~/Projects/skills/notes/skills-plan.md` | Current skills backlog and priorities |
-| `~/Projects/skills/notes/insights.md` | Mid-conversation observations captured via `note-that` |
-| `~/Projects/skills/notes/reviews/` | Previous reviews — for continuity and pattern spotting |
+| `notes/activity-log.md` | What was worked on — filter to the past 7 days |
+| `notes/inbox.md` | Unprocessed captures — ideas, snippets, observations |
+| `notes/friction.md` | Recurring pain points flagged during the week |
+| `notes/skills-plan.md` | Current skills backlog and priorities |
+| `notes/insights.md` | Mid-conversation observations captured via `note-that` |
+| `notes/reviews/` | Previous reviews — for continuity and pattern spotting |
 
-Also count the files in `~/Projects/skills/notes/reviews/`. If the count after writing this review will be a **multiple of 4** (i.e. reviews 4, 8, 12, …), this is a **pruning week** — Step 5 applies. Note this internally.
+Also count the files in `notes/reviews/`. If the count after writing this review will be a **multiple of 4** (i.e. reviews 4, 8, 12, …), this is a **pruning week** — Step 5 applies. Note this internally.
 
 Summarise what you found internally. Don't output anything yet.
 
@@ -50,7 +52,7 @@ Ask these one at a time. Wait for a real answer before moving on. Don't accept "
 
 ## Step 3 — Write the review
 
-Save to `~/Projects/skills/notes/reviews/YYYY-WW.md` (ISO week number, e.g. `2026-13.md`).
+Save to `notes/reviews/YYYY-WW.md` (ISO week number, e.g. `2026-13.md`).
 
 ```markdown
 # Week Review: YYYY-WW
@@ -86,7 +88,7 @@ Derived from: friction log patterns, inbox items, skills backlog.}
 Skip this step unless this is a pruning week.
 
 ### 5a — Inventory
-List every skill directory under `~/Projects/skills/skills/`. For each one, note its name.
+List every skill directory under `skills/` in the current repo (or `~/Projects/skills/skills/` if using global fallback). For each one, note its name.
 
 ### 5b — Usage signal
 Scan the last 4 review files (`notes/reviews/`) for mentions of each skill name. A mention counts as: named in "Done this week", "Next priority", "Learned", or "Friction" sections.

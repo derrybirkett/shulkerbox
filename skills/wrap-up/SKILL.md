@@ -80,11 +80,13 @@ git push origin main --tags
 ### 8. Learning note
 Ask: **"Any learning notes for this session?"**
 
-If the user provides one, append it to the most recent entry in `~/Projects/skills/notes/activity-log.md` as a blockquote:
+If the user provides one, append it to the most recent entry in `notes/activity-log.md` as a blockquote:
 
 ```markdown
 > <learning note>
 ```
+
+**Notes location:** Use `./notes/` in the current repo if it exists, otherwise fall back to `~/Projects/skills/notes/`.
 
 This is separate from the auto-generated hook entry — it captures reflection, not just activity.
 
@@ -102,7 +104,7 @@ Present them to the user:
 
 **Should I add these to the handover?"**
 
-If confirmed, prepend them to `~/Projects/skills/notes/inbox.md` as a new section at the top:
+If confirmed, prepend them to `notes/inbox.md` as a new section at the top (use `./notes/` in current repo, or fall back to `~/Projects/skills/notes/`):
 
 ```markdown
 ## Handover — YYYY-MM-DD
