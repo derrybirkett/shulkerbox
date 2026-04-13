@@ -144,7 +144,7 @@ By centralizing resources in a tool-agnostic way, you build a library of knowled
 
 ## License
 
-[Choose your license]
+MIT License - see [LICENSE](LICENSE) file for details
 
 ## Related
 
