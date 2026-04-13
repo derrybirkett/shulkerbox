@@ -77,20 +77,29 @@ git tag v<new-version>
 git push origin main --tags
 ```
 
-### 8. Learning note
-Ask: **"Any learning notes for this session?"**
+### 8. Document session in activity log
 
-If the user provides one, append it to the most recent entry in `notes/activity-log.md` as a blockquote:
+Write a session summary to `notes/activity-log.md`:
+
+```markdown
+## YYYY-MM-DD HH:MM | Session Wrap-Up
+
+**Version:** vX.Y.Z
+**Commits:** [list of commit messages from this session]
+
+[One paragraph summary of what was accomplished this session]
+
+```
+
+Then ask: **"Any learning notes to add?"**
+
+If the user provides one, append it as a blockquote below the session entry:
 
 ```markdown
 > <learning note>
 ```
 
-**Notes location:** Use `./notes/activity-log.md` in the current working directory. If `notes/` doesn't exist, skip this step.
-
-This is separate from the auto-generated hook entry — it captures reflection, not just activity.
-
-If no note, skip.
+**Notes location:** Use `./notes/activity-log.md` in the current working directory. If `notes/` doesn't exist, skip this step entirely.
 
 ### 9. Prepare handover
 Review the conversation and extract any next steps that were discussed or agreed upon during the session.
@@ -128,9 +137,10 @@ If there were no next steps discussed during the session, or the user declines, 
 
 ### 10. Confirm and end
 Report:
-- Commit SHA (short)
+- Commit SHA (short, or "none" if just tag bump)
 - Tag applied
 - Push status
+- Activity log updated
 - Handover written (if applicable)
 
 Then say **"Session wrapped"** and stop.
