@@ -1,17 +1,13 @@
 #!/bin/bash
 # post-commit hook — appends an entry to the activity log
-# Installed globally via: git config --global core.hooksPath ~/.git-hooks
+# Looks for notes/ directory in the git repo root
 
 # Find the git repo root
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+LOG_FILE="$REPO_ROOT/notes/activity-log.md"
 
-# Check for project-scoped notes, fall back to global
-if [ -d "$REPO_ROOT/notes" ]; then
-  LOG_FILE="$REPO_ROOT/notes/activity-log.md"
-elif [ -d "$HOME/Projects/skills/notes" ]; then
-  LOG_FILE="$HOME/Projects/skills/notes/activity-log.md"
-else
-  # No notes directory found, skip logging
+# Skip if notes directory doesn't exist
+if [ ! -d "$REPO_ROOT/notes" ]; then
   exit 0
 fi
 

@@ -20,7 +20,7 @@ The ritual that makes the moleskine self-improving. Run once a week — Friday a
 
 ## Step 1 — Gather context
 
-**Notes location:** Use `./notes/` in the current repo if it exists, otherwise fall back to `~/Projects/skills/notes/`.
+**Notes location:** All files are relative to the current working directory (`./notes/`). If the `notes/` directory doesn't exist, inform the user and exit.
 
 Read these files silently before asking anything:
 
@@ -88,7 +88,7 @@ Derived from: friction log patterns, inbox items, skills backlog.}
 Skip this step unless this is a pruning week.
 
 ### 5a — Inventory
-List every skill directory under `skills/` in the current repo (or `~/Projects/skills/skills/` if using global fallback). For each one, note its name.
+List every skill directory under `skills/` in the current working directory. For each one, note its name.
 
 ### 5b — Usage signal
 Scan the last 4 review files (`notes/reviews/`) for mentions of each skill name. A mention counts as: named in "Done this week", "Next priority", "Learned", or "Friction" sections.

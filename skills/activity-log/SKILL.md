@@ -14,11 +14,9 @@ This skill maintains and queries a running log of work activity, auto-populated 
 
 ## Log location
 
-The activity log is stored in `notes/activity-log.md`:
-- **Project-scoped**: If the current repo has a `notes/` directory, use `./notes/activity-log.md`
-- **Global fallback**: Otherwise use `~/Projects/skills/notes/activity-log.md`
+`./notes/activity-log.md` (relative to the git repository root)
 
-Each entry is appended automatically on every `git commit` across all repos (requires global hook — see setup below).
+Each entry is appended automatically on every `git commit` by the post-commit hook. The hook looks for a `notes/` directory in the repo root; if not found, it skips logging.
 
 ## Entry format
 
@@ -62,7 +60,7 @@ Summarise the past 7 days: repos touched, key commits, anything worth rememberin
 
 ## Hook setup (one-time)
 
-The post-commit hook lives at `~/Projects/skills/hooks/post-commit`.
+The post-commit hook is included in this shulkerbox repo at `hooks/.claude/hooks/post-commit`.
 
 To activate it globally across all repos:
 
@@ -70,9 +68,9 @@ To activate it globally across all repos:
 # Create a global hooks directory
 mkdir -p ~/.git-hooks
 
-# Symlink the post-commit hook into it
-ln -s ~/Projects/skills/hooks/post-commit ~/.git-hooks/post-commit
-chmod +x ~/Projects/skills/hooks/post-commit
+# Symlink the post-commit hook from shulkerbox
+ln -s /path/to/shulkerbox/hooks/.claude/hooks/post-commit ~/.git-hooks/post-commit
+chmod +x ~/.git-hooks/post-commit
 
 # Tell git to use it globally
 git config --global core.hooksPath ~/.git-hooks
@@ -81,5 +79,7 @@ git config --global core.hooksPath ~/.git-hooks
 To verify:
 ```bash
 git config --global core.hooksPath
-# should output: /Users/dbirkett/.git-hooks
+# should output: /Users/yourusername/.git-hooks
 ```
+
+The hook will append to `notes/activity-log.md` in each repo that has a `notes/` directory.

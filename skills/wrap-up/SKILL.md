@@ -86,7 +86,7 @@ If the user provides one, append it to the most recent entry in `notes/activity-
 > <learning note>
 ```
 
-**Notes location:** Use `./notes/` in the current repo if it exists, otherwise fall back to `~/Projects/skills/notes/`.
+**Notes location:** Use `./notes/activity-log.md` in the current working directory. If `notes/` doesn't exist, skip this step.
 
 This is separate from the auto-generated hook entry — it captures reflection, not just activity.
 
@@ -104,7 +104,7 @@ Present them to the user:
 
 **Should I add these to the handover?"**
 
-If confirmed, prepend them to `notes/inbox.md` as a new section at the top (use `./notes/` in current repo, or fall back to `~/Projects/skills/notes/`):
+If confirmed, prepend them to `notes/inbox.md` as a new section at the top:
 
 ```markdown
 ## Handover — YYYY-MM-DD
