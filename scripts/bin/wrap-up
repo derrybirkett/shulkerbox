@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# wrap-up — End-of-session workflow: commit, tag, push
+#
+# Usage: wrap-up
+#
+# Invokes the Claude Code /wrap-up skill in the current directory.
+
+set -euo pipefail
+
+# Check if claude CLI is available
+if ! command -v claude &> /dev/null; then
+    echo "Error: claude CLI not found in PATH"
+    echo "Make sure Claude Code CLI is installed and available"
+    exit 1
+fi
+
+# Invoke the wrap-up skill
+claude /wrap-up "$@"

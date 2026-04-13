@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "user": {
+    "name": "Derry Birkett",
+    "github_username": "dbirkett",
+    "jira_email": "derry.birkett@icloud.com"
+  },
+  "preferences": {
+    "default_view": "context-aware",
+    "show_all_checks": false,
+    "highlight_mentions": true,
+    "max_pr_age_warning_days": 3,
+    "stale_pr_days": 7,
+    "max_prs_to_show": 10,
+    "max_tickets_to_show": 10
+  },
+  "notifications": {
+    "failing_checks": true,
+    "review_requests": true,
+    "mentions": true,
+    "stale_prs": false,
+    "new_comments": true,
+    "status_changes": true
+  },
+  "github": {
+    "default_repo": null,
+    "exclude_repos": [],
+    "exclude_labels": ["dependencies", "wontfix"],
+    "show_draft_prs": false,
+    "show_dependabot_prs": false
+  },
+  "jira": {
+    "default_project": null,
+    "exclude_projects": [],
+    "priority_levels": ["Highest", "High"],
+    "show_resolved": false,
+    "days_to_track": 7
+  },
+  "output": {
+    "format": "terminal",
+    "open_browser": false,
+    "show_urls": true,
+    "emoji": true,
+    "verbose": false
+  },
+  "cache": {
+    "enabled": true,
+    "ttl_minutes": 15,
+    "path": "~/.claude/skills/work-monitor/cache"
+  },
+  "projects": {}
+}

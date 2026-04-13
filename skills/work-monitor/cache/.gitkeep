@@ -1,0 +1,9 @@
+# Cache Directory
+
+This directory stores temporary state for work monitoring:
+- GitHub PR states
+- Jira ticket states
+- Last check timestamps
+- Comment tracking
+
+Cache files are automatically generated and can be safely deleted to reset state.

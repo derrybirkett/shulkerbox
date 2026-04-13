@@ -1,0 +1,27 @@
+#!/bin/bash
+# post-commit hook — appends an entry to the activity log
+# Installed globally via: git config --global core.hooksPath ~/.git-hooks
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LOG_FILE="$REPO_DIR/notes/activity-log.md"
+
+DATE=$(date +"%Y-%m-%d %H:%M")
+REPO=$(basename "$(git rev-parse --show-toplevel)")
+BRANCH=$(git branch --show-current)
+MSG=$(git log -1 --format="%s")
+
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# Initialise file with header if it doesn't exist
+if [ ! -f "$LOG_FILE" ]; then
+  echo "# Activity Log" > "$LOG_FILE"
+  echo "" >> "$LOG_FILE"
+  echo "Auto-populated by post-commit hook. Enriched manually or via the activity-log skill." >> "$LOG_FILE"
+  echo "" >> "$LOG_FILE"
+fi
+
+{
+  echo ""
+  echo "## $DATE | $REPO ($BRANCH)"
+  echo "**$MSG**"
+} >> "$LOG_FILE"
