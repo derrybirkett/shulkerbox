@@ -15,6 +15,7 @@ Shulkerbox is a centralized, tool-agnostic repository that stores all reusable d
 - **Plugins**: Extensions and integrations for various tools
 - **Templates**: Project scaffolding, boilerplate, and starter files
 - **Configs**: Shared configuration files for tools and environments
+- **Library**: Curated reference materials, documentation links, and research
 
 ## Structure
 
@@ -27,6 +28,7 @@ shulkerbox/
 ├── plugins/          # Tool extensions
 ├── templates/        # Project templates
 ├── configs/          # Shared configurations
+├── library/          # Reference materials and documentation links
 └── docs/             # Documentation and guides
 ```
 
@@ -98,33 +100,40 @@ copilot plugins add ~/shulkerbox/plugins/my-plugin
 
 ## Getting Started
 
-1. Clone this repository to a standard location:
-   ```bash
-   git clone <repo-url> ~/shulkerbox
-   ```
+See [QUICKSTART.md](QUICKSTART.md) for 5-minute setup or [USAGE.md](USAGE.md) for detailed usage guide.
 
-2. Create the basic directory structure:
-   ```bash
-   cd ~/shulkerbox
-   mkdir -p skills hooks scripts agents plugins templates configs
-   ```
+**Quick setup:**
 
-3. Link resources to your tools:
-   ```bash
-   # Example for Claude Code
-   ln -s ~/shulkerbox/skills ~/.claude/skills
-   ```
+```bash
+# Clone
+git clone https://github.com/derrybirkett/shulkerbox.git ~/shulkerbox
 
-4. Add your first resource and commit:
-   ```bash
-   # Create a new skill
-   echo "---" > skills/my-skill.md
-   echo "name: my-skill" >> skills/my-skill.md
-   echo "---" >> skills/my-skill.md
-   
-   git add skills/my-skill.md
-   git commit -m "Add my-skill"
-   ```
+# Link skills
+ln -s ~/shulkerbox/skills ~/.claude/skills
+
+# Add scripts to PATH
+echo 'export PATH="$HOME/shulkerbox/scripts/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# Try it
+wrap-up
+```
+
+## Key Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Get running in 5 minutes
+- **[USAGE.md](USAGE.md)** - Detailed usage across tools
+- **[Productivity System](docs/PRODUCTIVITY-SYSTEM.md)** - Self-improvement loop guide
+- **[Subagents Guide](docs/SUBAGENTS.md)** - When and how to use isolated workers
+- **[Library](library/)** - Curated reference materials and patterns
+
+## Templates
+
+Start new projects with our templates:
+
+- **[CLAUDE.md](templates/CLAUDE.md)** - Project conventions and always-on context
+- **[.claude/rules/](templates/.claude/rules/)** - Path-specific guidelines (load only when working with matching files)
+- **[notes/](templates/notes/)** - Personal knowledge management system
 
 ## Contributing
 

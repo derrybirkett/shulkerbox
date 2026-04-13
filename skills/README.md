@@ -13,8 +13,10 @@ Each skill is a directory containing a `SKILL.md` file with frontmatter:
 ```markdown
 ---
 name: skill-name
-description: Brief description of what this skill does
+description: Brief, specific description of what this skill does and when to use it
 user-invocable: true
+disable-model-invocation: true  # Optional: hide from Claude until user invokes
+context: fork                   # Optional: run in isolated context
 argument-hint: optional hint for arguments
 metadata:
   tags: [category, keywords]
@@ -25,6 +27,31 @@ metadata:
 
 [Skill content here]
 ```
+
+### Frontmatter Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Kebab-case, unique identifier |
+| `description` | Yes | Clear description - Claude uses this to decide relevance! |
+| `user-invocable` | Yes | Can user invoke with `/skill-name`? |
+| `disable-model-invocation` | No | If `true`, only user can invoke (saves context) |
+| `context` | No | Set to `fork` to run in isolated subagent context |
+| `argument-hint` | No | Shows in autocomplete |
+| `metadata.tags` | No | For discovery and organization |
+| `metadata.category` | No | Grouping |
+
+### When to Use Special Fields
+
+**`disable-model-invocation: true`**
+- Skills with side effects (git operations, deployments)
+- User-only workflows (wrap-up, release)
+- Saves context: skill won't load until you invoke it
+
+**`context: fork`**
+- Work that reads many files but only needs to return summary
+- Parallel tasks that don't need main conversation history
+- Keeps main context clean
 
 ## Available Skills
 
@@ -86,13 +113,39 @@ Skills should be written to work across:
 - Gemini CLI (with tool mapping)
 - Other LLM tools that support structured workflows
 
+## Context Costs
+
+Understanding context costs helps you build an effective skill library:
+
+### How Skills Load
+
+1. **At session start**: Skill descriptions load (unless `disable-model-invocation: true`)
+2. **On invocation**: Full skill content loads into conversation
+3. **In subagents**: Skills are fully preloaded at launch (different from main context)
+
+### Cost by Type
+
+| Skill Type | Description Cost | Content Cost |
+|------------|------------------|--------------|
+| Default skill | Every request | On use |
+| `disable-model-invocation: true` | None | On user invocation |
+| In subagent (`context: fork`) | None (isolated) | Full at subagent start |
+
+### Optimize Context
+
+- **Write clear descriptions**: Claude uses these to decide relevance
+- **Use `disable-model-invocation: true`** for user-only skills (zero cost)
+- **Use `context: fork`** for expensive operations that only need to return summary
+- **Keep skills focused**: Small, single-purpose skills are easier to load selectively
+
 ## Best Practices
 
-1. **Clear triggers**: Define when and how to invoke the skill
+1. **Clear, specific descriptions**: Claude reads these to decide when to load the skill
 2. **Explicit steps**: Number steps and make them actionable
 3. **Error handling**: Specify what to do if steps fail
 4. **Tool-agnostic**: Avoid tool-specific commands where possible
 5. **Document dependencies**: Note any required tools or setup
+6. **Side effects**: Use `disable-model-invocation: true` for skills that modify state
 
 ## Cross-Platform Tools
 

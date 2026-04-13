@@ -2,6 +2,7 @@
 name: wrap-up
 description: End-of-session workflow. Stages all changes, prompts for a conventional commit message, increments the patch version tag, pushes to origin main with tags, and prepares handover notes for the next session.
 user-invocable: true
+disable-model-invocation: true
 argument-hint: optional commit message
 metadata:
   tags: [git, commit, versioning, workflow, session, release, handover]
