@@ -21,11 +21,21 @@ Shulkerbox is a centralized, tool-agnostic repository that stores all reusable d
 
 ```
 shulkerbox/
-├── skills/           # LLM skills and workflows
-├── agents/           # Custom agent definitions
+├── skills/           # Workflows organized by category
+│   ├── core/         # Essential workflows (wrap-up, handover, pickup, note-that)
+│   ├── productivity/ # Reflection & learning (activity-log, weekly-review)
+│   ├── development/  # Dev workflows (work-monitor)
+│   ├── design/       # Design workflows
+│   └── coaching/     # Meta-skills
+├── agents/           # Agent personas with expertise
+│   └── productivity/ # Personal systems coach
+├── .claude/          # Project subagents (context isolation)
+│   └── agents/       # Task workers (code-reviewer, test-runner, etc.)
 ├── hooks/            # Event-driven shell hooks
+│   └── .claude/hooks/# Git hooks (pre-commit, post-commit, session-start)
+├── automation/       # Scheduled tasks and maintenance
+├── notes/            # Project-specific notes (git-ignored)
 ├── scripts/          # Automation and utility scripts
-├── notes/            # Project-specific notes (inbox, activity log, insights)
 ├── plugins/          # Tool extensions
 ├── templates/        # Project templates and scaffolding
 ├── configs/          # Shared configurations
@@ -33,14 +43,51 @@ shulkerbox/
 └── docs/             # Documentation and guides
 ```
 
+## Core Concepts
+
+### Skills vs Agents vs Subagents
+
+Shulkerbox follows Claude Code's architectural patterns:
+
+**Skills** (SKILL.md in `skills/`)
+- Reusable workflows that run in main conversation context
+- Step-by-step instructions for common tasks
+- Invoked with `/skill-name` or auto-triggered by Claude
+- Examples: `/wrap-up`, `/note-that`, `/pickup`
+
+**Agents** (AGENT.md in `agents/`)
+- Specialized personas with domain expertise and coaching style
+- Embody knowledge, opinions, and decision-making approaches
+- Guide work through specific lenses (productivity, design, development)
+- Example: [productivity agent](agents/productivity/)
+
+**Subagents** (.md in `.claude/agents/`)
+- Task workers with isolated context windows
+- Keep verbose operations out of main conversation
+- Tool-restricted for specific purposes (read-only review, isolated testing)
+- Examples: code-reviewer, test-runner, researcher
+
+[→ Full Architecture Guide](docs/ARCHITECTURE.md)
+
 ## Featured Systems
 
-### Productivity System
-A personal knowledge management and self-improvement system built on skills, agents, and structured reflection. Includes:
-- **productivity-agent**: Coaching persona for your development moleskine
-- **activity-log**: Auto-captures commit history for standup and reflection
-- **weekly-review**: End-of-week reflection ritual that surfaces patterns
-- **work-monitor**: Real-time view of PRs, tickets, and work activity
+### Session Continuity
+Never lose context between sessions:
+- **handover**: Captures pending tasks, decisions, and blockers at session end
+- **pickup**: Restores context in <30s at session start
+- **session-start hook**: Auto-notifies of pending work
+
+### Self-Improvement Loop
+Continuous learning and workflow optimization:
+- **note-that**: Frictionless mid-conversation insight capture
+- **activity-log**: Auto-captures commit history (via post-commit hook)
+- **weekly-review**: End-of-week reflection that surfaces patterns
+- **productivity-agent**: Coaching persona that observes and improves workflows
+
+### Work Management
+Real-time visibility into your work:
+- **work-monitor**: GitHub PRs, Jira tickets, and team activity
+- Context-aware: auto-detects current project
 
 [→ Full Productivity System Guide](docs/PRODUCTIVITY-SYSTEM.md)
 
@@ -122,6 +169,7 @@ wrap-up
 
 ## Key Documentation
 
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Core concepts and design principles ⭐
 - **[QUICKSTART.md](QUICKSTART.md)** - Get running in 5 minutes
 - **[USAGE.md](USAGE.md)** - Detailed usage across tools
 - **[Productivity System](docs/PRODUCTIVITY-SYSTEM.md)** - Self-improvement loop guide

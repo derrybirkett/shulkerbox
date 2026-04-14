@@ -1,3 +1,15 @@
+---
+name: work-monitor
+description: Context-aware monitoring of Jira tickets, GitHub PRs, and work activity. Use when checking work status, PR reviews, ticket updates, or team activity.
+user-invocable: true
+disable-model-invocation: false
+argument-hint: optional query (e.g., "PRs", "tickets", "FEAT-100")
+metadata:
+  tags: [github, jira, monitoring, pr-review, standup, activity]
+  category: development
+  audience: core
+---
+
 # Work Monitor Skill
 
 **Version**: 1.0.0

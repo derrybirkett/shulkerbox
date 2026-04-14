@@ -6,7 +6,8 @@ disable-model-invocation: true
 argument-hint: optional commit message
 metadata:
   tags: [git, commit, versioning, workflow, session, release, handover]
-  category: workflow
+  category: core
+  audience: core
 ---
 
 # Wrap Up
