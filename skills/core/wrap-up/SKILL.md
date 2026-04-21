@@ -34,6 +34,70 @@ Show the user what will be staged. If working tree is clean, say so and ask whet
 git add -A
 ```
 
+### 2.5. Pre-Commit Verification
+
+Run automated checks before committing to catch common issues:
+
+#### Check 1: TODOs and FIXMEs
+```bash
+git diff --cached | grep -E "^\+.*TODO|^\+.*FIXME|^\+.*XXX"
+```
+**If found:** List them and ask: "⚠️  Adding TODO/FIXME markers. Commit anyway? [y/N]"
+
+#### Check 2: Sensitive Files
+```bash
+git diff --cached --name-only | grep -E "\.env$|\.env\.|credentials|secrets|password|private.*key|api.*key|token"
+```
+**If found:** Show warning and require explicit confirmation:
+```
+⚠️  WARNING: Potential sensitive files staged:
+   - .env.local
+   - config/credentials.json
+   
+This is likely a mistake. Proceed? [y/N]
+```
+If user says N, abort to Step 1.
+
+#### Check 3: Broken References (Migration Detection)
+If git shows both deletions and additions (potential migration):
+```bash
+# Detect migration pattern
+deleted_count=$(git diff --cached --diff-filter=D --name-only | wc -l)
+added_count=$(git diff --cached --diff-filter=A --name-only | wc -l)
+```
+**If both > 0:** Check if old paths are referenced in documentation:
+```bash
+git diff --cached --diff-filter=D --name-only | head -3  # Sample old paths
+```
+Then check if README.md is staged:
+```bash
+git diff --cached --name-only | grep -E "README|ARCHITECTURE|docs/"
+```
+**If documentation NOT staged:** Warn: "⚠️  Files moved/deleted but documentation not updated. Proceed? [y/N]"
+
+#### Check 4: Directory Structure Completeness
+If creating new directories (check for "A" status with directory paths):
+```bash
+# List new directories being created
+git diff --cached --name-status | grep "^A" | awk '{print $2}' | xargs dirname | sort -u
+```
+**If migration detected:** Ask: "Directory structure change detected. All planned directories created? [y/N]"
+
+#### Verification Summary
+Present results in compact format:
+```
+✅ Pre-Commit Verification:
+   ✅ No TODOs in staged changes
+   ✅ No sensitive files detected
+   ✅ Documentation updated
+   ⚠️  Directory migration: 15 files moved
+   
+Proceed with commit? [y/N]
+```
+
+If user says **N** or **abort**: Return to Step 1 to allow fixes.  
+If user says **y** or **continue**: Proceed to Step 3.
+
 ### 3. Prompt for commit message
 Ask the user: **"Commit message?"**
 
@@ -60,13 +124,57 @@ git tag --sort=-v:refname | head -5
 
 Find the latest `v*.*.*` tag. If none exists, start at `v0.1.0`.
 
-Ask: **"Major, minor, or patch bump?"** — then show the semver rules as a one-liner reminder:
+#### Automatic Breaking Change Detection
 
-> `patch` = fix or edit existing · `minor` = new skill/agent/file · `major` = breaks how you invoke or find things
+Before asking the user, analyze staged changes for breaking change indicators:
 
-Default to **minor** if new skills or agents were added this session, **patch** otherwise. Accept the user's override without argument.
+**File Moves/Renames (Path Changes):**
+```bash
+git diff --cached --name-status | grep "^R"
+renamed_count=$(git diff --cached --name-status | grep "^R" | wc -l)
+```
+If `renamed_count > 0` → Likely breaking (affects imports, references, symlinks)
 
-Propose the resulting tag (e.g. `v0.4.0 → v0.5.0`) and confirm before applying.
+**Skill/Agent Metadata Changes:**
+```bash
+git diff --cached -- '**/SKILL.md' | grep -E "^[+-]name:"
+git diff --cached -- '**/AGENT.md' | grep -E "^[+-]name:"
+git diff --cached -- '**/SKILL.md' | grep -E "^[+-]user-invocable:"
+```
+If skill/agent names or invocability changed → Breaking
+
+**Directory Structure Changes:**
+```bash
+# Check if files moved between directories (not just renamed in place)
+git diff --cached --name-status | awk '$1 == "R" {print $2, $3}' | \
+  awk '{split($1,a,"/"); split($2,b,"/"); if(a[1] != b[1]) print}'
+```
+If files moved to different top-level directories → Breaking
+
+**Present Detection Results:**
+```
+🔍 Breaking Change Analysis:
+   ✅ 15 files moved between directories (skills/ reorganization)
+   ✅ Directory structure changed (flat → categorized)
+   ⚠️  This appears to be a BREAKING CHANGE
+   
+   Suggested: MAJOR version bump
+```
+
+**Determine Default:**
+- **major** if breaking changes detected (file moves, name changes, structure changes)
+- **minor** if new skills/agents added this session (check for new SKILL.md files)
+- **patch** otherwise (edits, fixes, docs)
+
+Ask: **"Major, minor, or patch bump?"** — then show enhanced semver rules:
+
+> `patch` = fix or edit existing · `minor` = new skill/agent/file · `major` = breaks how you invoke or find things, changes directory structure, renames skills, or changes file paths
+
+Show the suggested bump with reasoning: `"Suggested: MAJOR (file paths changed)"`
+
+Accept the user's override without argument.
+
+Propose the resulting tag (e.g. `v0.4.0 → v1.0.0`) and confirm before applying.
 
 ### 6. Tag
 ```bash

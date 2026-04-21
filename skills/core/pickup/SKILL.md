@@ -29,6 +29,41 @@ Zero-friction session startup. Within 30 seconds, user knows:
 
 ## Workflow
 
+### 0. Check Recent Activity (Git Context)
+
+Before reading the inbox, check for uncommitted work and recent commit activity to detect mid-task resumption:
+
+```bash
+git status --short
+git diff --stat
+git log --oneline --since="24 hours ago" -10
+git tag --sort=-v:refname | head -3
+```
+
+**Analysis:**
+- **Uncommitted changes present?** → Note: "You have uncommitted work from last session"
+- **Recent commits since last tag?** → Show what's been done since last version
+- **Working tree clean but recent commits exist?** → Possible mid-wrap-up resumption (commits not tagged yet)
+- **Both clean and no recent commits?** → Fresh start or long break
+
+**Present Git Context:**
+```
+📊 Session Context
+   Last tag: v1.0.0 (2 commits ago)
+   Uncommitted: 3 files modified, 1 file added
+   Recent commits (last 24h):
+     - 23e0aa8 refactor: reorganize skills and agents
+     - 5c52374 feat: wrap-up writes to activity log
+```
+
+This helps detect:
+- **Mid-reorganization resumption** (commits exist but work incomplete)
+- **Forgotten wrap-ups** from previous session (commits not tagged)
+- **What's changed** since last versioned state
+- **Session continuity** (pick up where you left off)
+
+**Integration:** This git context is shown FIRST, then handover items from inbox, providing complete continuity.
+
 ### 1. Read Inbox
 
 Open `notes/inbox.md` and find the most recent handover section:

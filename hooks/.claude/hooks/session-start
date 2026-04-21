@@ -1,21 +1,46 @@
 #!/bin/bash
-# Session start hook: Show pending work from inbox
+# Session start hook: Show pending work from inbox and detect uncommitted work
 # This runs at the beginning of every Claude Code session
 
 INBOX="notes/inbox.md"
 
+# Check for uncommitted work
+uncommitted=""
+if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+  uncommitted="⚠️  Uncommitted work detected"
+fi
+
 # Check if inbox exists
 if [ ! -f "$INBOX" ]; then
+  # No inbox, but check if we should notify about uncommitted work
+  if [ -n "$uncommitted" ]; then
+    echo ""
+    echo "📊 Git Status Alert"
+    echo "   $uncommitted"
+    echo "   Run /pickup to check git status and resume"
+    echo ""
+  fi
   exit 0
 fi
 
 # Check for handover sections
 if ! grep -q "## Handover —" "$INBOX" 2>/dev/null; then
+  # No handover but show uncommitted work if present
+  if [ -n "$uncommitted" ]; then
+    echo ""
+    echo "📊 Git Status Alert"
+    echo "   $uncommitted"
+    echo "   Run /pickup to check git status"
+    echo ""
+  fi
   exit 0
 fi
 
 echo ""
 echo "📥 Session Pickup Available"
+if [ -n "$uncommitted" ]; then
+  echo "   $uncommitted"
+fi
 echo "   Run /pickup to see where you left off"
 
 # Count urgent items
