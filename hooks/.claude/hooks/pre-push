@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Pre-push hook to prevent direct pushes to main branch
+# This enforces a branching workflow where all changes go through feature branches
+
+protected_branch='main'
+current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+
+# Check if we're pushing to the protected branch
+while read local_ref local_sha remote_ref remote_sha
+do
+    if [ "$remote_ref" = "refs/heads/$protected_branch" ]; then
+        echo ""
+        echo "❌ PUSH REJECTED: Direct pushes to '$protected_branch' are not allowed."
+        echo ""
+        echo "To contribute to this project, please:"
+        echo "  1. Create a feature branch: git checkout -b feature/your-feature-name"
+        echo "  2. Make your changes and commit them"
+        echo "  3. Push your branch: git push -u origin feature/your-feature-name"
+        echo "  4. Create a pull request on GitHub"
+        echo ""
+        echo "If you need to update main (e.g., after a PR merge), pull instead:"
+        echo "  git checkout main && git pull origin main"
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0

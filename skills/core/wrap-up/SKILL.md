@@ -258,8 +258,8 @@ Then say **"Session wrapped"** and stop.
 
 ## Git workflow conventions
 
-- Branch strategy: feature branches off `main`
+- Branch strategy: feature branches off `main` (enforced by pre-push hook)
 - Merge strategy: squash merge via PR
 - Commit convention: conventional commits (feat|fix|chore|docs|refactor|test|style)
-- PRs required for shared work; direct push to `main` allowed for solo projects
+- All changes go through feature branches and PRs (no direct push to `main`)
 - `main` is always the source of truth
