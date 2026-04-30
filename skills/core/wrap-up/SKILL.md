@@ -1,11 +1,11 @@
 ---
 name: wrap-up
-description: End-of-session workflow. Stages all changes, prompts for a conventional commit message, increments the patch version tag, pushes to origin main with tags, and prepares handover notes for the next session.
+description: End-of-session workflow. Stages changes, commits with conventional message, handles both direct-to-main and PR-based workflows, manages version tags, and prepares handover notes.
 user-invocable: true
 disable-model-invocation: true
 argument-hint: optional commit message
 metadata:
-  tags: [git, commit, versioning, workflow, session, release, handover]
+  tags: [git, commit, versioning, workflow, session, release, handover, pr]
   category: core
   audience: core
 ---
@@ -181,10 +181,80 @@ Propose the resulting tag (e.g. `v0.4.0 → v1.0.0`) and confirm before applying
 git tag v<new-version>
 ```
 
-### 7. Push
+### 7. Detect workflow and push
+
+First, detect the current branch and workflow:
+
+```bash
+current_branch=$(git branch --show-current)
+main_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+```
+
+**If on main branch:**
 ```bash
 git push origin main --tags
 ```
+Proceed to step 8.
+
+**If on feature branch:**
+
+The project uses a PR-based workflow. Handle it:
+
+#### 7a. Push feature branch
+```bash
+git push origin $current_branch
+```
+
+#### 7b. Check for existing PR
+```bash
+gh pr view --json state,number 2>/dev/null
+```
+
+**If no PR exists:**
+Ask: **"Create pull request for this branch? [Y/n]"**
+
+If yes:
+```bash
+gh pr create --title "<commit message>" --body "$(cat <<'EOF'
+## Summary
+<Brief description from commit>
+
+## Changes
+<List key changes>
+
+## Test plan
+- [ ] <Test items>
+
+🤖 Generated with Claude Code
+EOF
+)"
+```
+
+**If PR exists and is open:**
+Show PR URL and status.
+
+Ask: **"PR #<number> is ready to merge. Merge and return to main? [Y/n]"**
+
+If yes:
+
+#### 7c. Merge PR and cleanup
+```bash
+gh pr merge --squash --delete-branch
+git checkout $main_branch
+git pull origin $main_branch
+git branch -d $current_branch 2>/dev/null || true
+git fetch --prune
+```
+
+**If user says no:**
+Report: "Staying on feature branch. Next session will continue here or you can switch to main manually."
+
+Skip tagging (tags only apply to main branch).
+
+Proceed to step 8.
+
+**If `gh` command not found:**
+Report: "GitHub CLI not installed. Push completed. Create PR manually at: `git remote get-url origin`"
 
 ### 8. Document session in activity log
 
