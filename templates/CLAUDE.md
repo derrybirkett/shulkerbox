@@ -6,19 +6,19 @@ Brief description of what this project does and its purpose.
 
 ```bash
 # Install dependencies
-npm install  # or: pnpm install, yarn install
+pnpm install
 
 # Development
-npm run dev
+pnpm dev
 
 # Build
-npm run build
+pnpm build
 
 # Test
-npm test
+pnpm test
 
 # Lint
-npm run lint
+pnpm lint
 ```
 
 ## Conventions
@@ -64,7 +64,7 @@ src/
 
 ### Adding packages
 ```bash
-npm install package-name
+pnpm add package-name
 # Document why major dependencies were added
 ```
 

@@ -31,7 +31,7 @@ templates/
 # Copy project template
 cp -r ~/shulkerbox/templates/projects/nextjs-saas ./my-project
 cd my-project
-npm install
+pnpm install
 ```
 
 ### Use File Template

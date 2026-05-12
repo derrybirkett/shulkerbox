@@ -117,7 +117,7 @@ ln -s ~/shulkerbox/hooks/.claude/hooks ~/.claude/hooks
 # Use a project template
 cp -r ~/shulkerbox/templates/projects/my-template ./new-project
 cd new-project
-npm install
+pnpm install
 ```
 
 ### Share Config Across Projects
