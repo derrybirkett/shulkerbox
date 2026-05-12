@@ -140,8 +140,8 @@ Track tool versions for configs:
 ```bash
 # Publish configs as a package
 cd configs/eslint
-npm init -y
-npm publish
+pnpm init
+pnpm publish
 ```
 
 ### As Git Submodule
