@@ -98,19 +98,39 @@ Proceed with commit? [y/N]
 If user says **N** or **abort**: Return to Step 1 to allow fixes.  
 If user says **y** or **continue**: Proceed to Step 3.
 
-### 3. Prompt for commit message
-Ask the user: **"Commit message?"**
+### 3. Draft and propose commit message
 
-Format it as a conventional commit:
+Before asking the user, generate a commit message draft automatically:
+
+```bash
+# Get context for the draft
+git diff --cached --stat
+git diff --cached --name-only
+git log --oneline -5   # to match the project's commit style
 ```
-<type>: <short description>
 
-# Types: feat | fix | chore | docs | refactor | test | style
-# One logical change per commit
-# Present tense, lowercase, no trailing period
+Analyse:
+- **Which files changed** — infer the domain (content, app, lib, docs, config)
+- **Scale of change** — number of files and lines to gauge scope
+- **Recent commit style** — match the project's existing vocabulary and phrasing
+- **Branch name** — often signals intent (e.g. `feature/ideas-studio` → ideas/studio work)
+
+Compose a conventional commit message:
+```
+<type>: <short description in present tense, lowercase, no trailing period>
+
+# Types: feat | fix | chore | docs | refactor | test | style | content
 ```
 
-If the user's input isn't already in conventional format, convert it and confirm before committing.
+Present it to the user:
+
+> **Proposed:** `feat: complete ideas studio with full post detail view and enriched blog content`
+>
+> Accept, or tell me what to change?
+
+- If the user says **yes / accept / looks good / LGTM** → use it as-is
+- If the user provides a replacement → convert to conventional format if needed, confirm, then use it
+- If the user tweaks wording → apply the tweak and confirm before committing
 
 ### 4. Commit
 ```bash
