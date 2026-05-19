@@ -1,0 +1,24 @@
+name: Prune Merged Branches
+on:
+  workflow_call:
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete merged branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state merged --base main --limit 100 \
+            --json headRefName \
+            --jq '.[].headRefName' \
+          | sort -u | while IFS= read -r branch; do
+            [ "$branch" = "main" ] && continue
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" 2>/dev/null \
+              && echo "Deleted: $branch" || echo "Already gone: $branch"
+          done

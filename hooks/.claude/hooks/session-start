@@ -63,4 +63,11 @@ fi
 
 echo ""
 
+# Sovereyn nudge — quiet reminder, not auto-run
+SOVEREYN="notes/sovereyn.md"
+if [ -f "$SOVEREYN" ]; then
+  echo "   👁  Run /sovereyn when you want a strategic check-in"
+  echo ""
+fi
+
 exit 0
