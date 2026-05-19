@@ -1,0 +1,57 @@
+# Curator Agent Configuration
+# Edit this file to tune detection thresholds, enable/disable scopes,
+# or flip dry_run off after the 14-night validation period.
+
+# Dry-run mode: write findings to workflow summary only, file no issues.
+# Flip to false once two consecutive nights produce findings you'd have filed yourself.
+dry_run: true
+
+# Maximum issues filed per run. Extras are logged to workflow summary.
+max_issues_per_run: 5
+
+# Minimum confidence level required to file an issue.
+# Options: high | med | low
+min_confidence: med
+
+# Dedup window: skip filing if a matching [curator] issue was closed within N days.
+dedup_window_days: 30
+
+# Scopes to enable. Comment out to disable a category.
+scopes:
+  dead_exports:
+    enabled: true
+    threshold: 3  # minimum unused exports in a single file to qualify
+  oversized_files:
+    enabled: true
+    line_threshold: 400
+    symbol_threshold: 5
+  stale_placeholders:
+    enabled: true
+    year_marker_cutoff: 2  # flag year markers this many years old or older
+
+# File paths to scan. Relative to repo root.
+scan_paths:
+  - lib/
+  - components/
+  - app/
+  - content/
+
+# Always exclude these paths, even if inside scan_paths.
+exclude_paths:
+  - node_modules/
+  - .next/
+  - public/
+  - .planning/
+  - shulkerbox/
+  - dist/
+  - build/
+
+# GitHub labels to apply to filed issues.
+labels:
+  base:
+    - curator
+    - cleanup
+  per_scope:
+    dead_exports: curator:dead-exports
+    oversized_files: curator:oversized-files
+    stale_placeholders: curator:stale-placeholders
