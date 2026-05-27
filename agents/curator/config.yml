@@ -4,7 +4,7 @@
 
 # Dry-run mode: write findings to workflow summary only, file no issues.
 # Flip to false once two consecutive nights produce findings you'd have filed yourself.
-dry_run: true
+dry_run: false
 
 # Maximum issues filed per run. Extras are logged to workflow summary.
 max_issues_per_run: 5
