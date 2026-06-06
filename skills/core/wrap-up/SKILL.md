@@ -22,6 +22,25 @@ End-of-session workflow that commits, tags, and pushes.
 
 Execute in order. Stop and report if any step fails.
 
+### 0. Load config
+
+Read `.shulkerbox/config.yml` from the repo root if it exists. Use the `wrap_up:`
+section. **If the file or any key is missing, use these defaults (legacy behavior):**
+
+| Key | Default |
+|---|---|
+| `wrap_up.changelog.enabled` | `false` |
+| `wrap_up.changelog.path` | `CHANGELOG.md` |
+| `wrap_up.releases.enabled` | `false` |
+| `wrap_up.issues.enabled` | `false` |
+| `wrap_up.issues.label_namespace` | `next` |
+| `wrap_up.activity_log.enabled` | `true` |
+| `wrap_up.activity_log.path` | `notes/activity-log.md` |
+| `wrap_up.learnings.target` | `activity_log` |
+
+With defaults, this skill behaves exactly as it did before this config existed
+(handover to inbox, learnings as an activity-log blockquote, no changelog/release).
+
 ### 1. Check status
 ```bash
 git status
@@ -196,6 +215,43 @@ Accept the user's override without argument.
 
 Propose the resulting tag (e.g. `v0.4.0 → v1.0.0`) and confirm before applying.
 
+### 5.5. Update changelog (if `wrap_up.changelog.enabled`)
+
+Skip this entire step if `wrap_up.changelog.enabled` is false.
+
+Open the changelog at `wrap_up.changelog.path`. Move any items under
+`## [Unreleased]` into a new dated section and add a curated entry for the version
+chosen in step 5 (without the leading `v`), dated today:
+
+```markdown
+## [Unreleased]
+
+## [X.Y.Z] — YYYY-MM-DD
+
+[One curated sentence — reuse the session summary, phrased for a reader.]
+
+### Added
+- [user-facing additions, if any]
+
+### Changed
+- [user-facing changes, if any]
+
+### Fixed
+- [user-facing fixes, if any]
+```
+
+Omit any of Added/Changed/Fixed with no entries; keep a fresh empty
+`## [Unreleased]` at the top. Then fold it into the existing commit so the tag
+will include it:
+
+```bash
+git add <wrap_up.changelog.path>
+git commit --amend --no-edit
+```
+
+(`--no-edit` preserves the commit message already approved in step 3. The commit
+has not been pushed yet at this point, so amending is safe.)
+
 ### 6. Tag
 ```bash
 git tag v<new-version>
@@ -276,63 +332,89 @@ Proceed to step 8.
 **If `gh` command not found:**
 Report: "GitHub CLI not installed. Push completed. Create PR manually at: `git remote get-url origin`"
 
-### 8. Document session in activity log
+### 7.5. Publish GitHub Release (if `wrap_up.releases.enabled` and tag is on main)
 
-Write a session summary to `notes/activity-log.md`:
+Skip if `wrap_up.releases.enabled` is false.
+
+**Only publish a release when the tag is reachable from `main`** — i.e. the push
+in step 7 went to `main`. If step 7 used the feature-branch / PR path, the tag is
+on an unmerged commit; a release would orphan. In that case, **defer**: report
+"release deferred until vX.Y.Z is merged to main" and skip.
+
+When on the main path, publish using this version's changelog section as the body:
+
+```bash
+awk -v v="X.Y.Z" '$0 ~ "^## \\["v"\\]"{f=1;print;next} /^## \[/{f=0} f' \
+  <wrap_up.changelog.path> > /tmp/release-notes.md
+gh release create vX.Y.Z --title "vX.Y.Z" --notes-file /tmp/release-notes.md
+```
+
+Substitute the real version for `X.Y.Z` / `vX.Y.Z`. If `gh release create` reports
+the release already exists, report it and continue (do not fail the wrap-up).
+
+### 8. Document session in activity log (if `wrap_up.activity_log.enabled`)
+
+Skip if `wrap_up.activity_log.enabled` is false or the directory of
+`wrap_up.activity_log.path` does not exist.
+
+Prepend a **slim narrative** entry to `wrap_up.activity_log.path` — the "why / how
+it went" story only. **Do not** duplicate learnings (those go to memory in step
+8.5) or next-steps (those go to issues in step 9):
 
 ```markdown
-## YYYY-MM-DD HH:MM | Session Wrap-Up
+## YYYY-MM-DD | <short session title>
 
 **Version:** vX.Y.Z
-**Commits:** [list of commit messages from this session]
 
-[One paragraph summary of what was accomplished this session]
-
-```
-
-Then ask: **"Any learning notes to add?"**
-
-If the user provides one, append it as a blockquote below the session entry:
-
-```markdown
-> <learning note>
-```
-
-**Notes location:** Use `./notes/activity-log.md` in the current working directory. If `notes/` doesn't exist, skip this step entirely.
-
-### 9. Prepare handover
-Review the conversation and extract any next steps that were discussed or agreed upon during the session.
-
-Present them to the user:
-
-**"During this session, we agreed on these next steps:**
-- [First agreed item]
-- [Second agreed item]
-- [etc.]
-
-**Should I add these to the handover?"**
-
-If confirmed, prepend them to `notes/inbox.md` as a new section at the top:
-
-```markdown
-## Handover — YYYY-MM-DD
-
-**From this session:**
-[One sentence summary of what was accomplished]
-
-**Next steps:**
-- [ ] [First task]
-- [ ] [Second task]
-- [ ] [etc.]
+<One or two paragraphs of narrative: what was attempted, key decisions, how it went.>
 
 ---
-
-[existing inbox content...]
 ```
 
-Use today's date for the heading. Format as a task list with checkboxes.
+### 8.5. Capture learnings
 
-If there were no next steps discussed during the session, or the user declines, move on — not every session needs a handover.
+Ask the user for learning notes, **wait for their response**, and **suggest
+specific candidate learnings** drawn from this session rather than asking an
+open-ended question. For example: "Worth saving as learnings: (a) <X>, (b) <Y>.
+Any of those, or others?"
+
+- If `wrap_up.learnings.target` is `memory`: for each confirmed learning, write a
+  memory file under the project memory directory and add a one-line pointer to
+  `MEMORY.md` (follow the memory format already used in this repo).
+- If `wrap_up.learnings.target` is `activity_log` (legacy default): append each
+  learning as a blockquote under the activity-log entry from step 8.
+
+### 9. Prepare handover
+
+Review the conversation and extract next steps that were discussed or agreed.
+Present them to the user for confirmation:
+
+> **During this session, we agreed on these next steps:**
+> - [item] — proposed status: <urgent|in-progress|ready|waiting|decision>
+> - ...
+>
+> **File these?**
+
+If confirmed:
+
+- **If `wrap_up.issues.enabled` is true** — file one GitHub Issue per next step:
+
+  ```bash
+  gh issue create \
+    --title "<concise next-step title>" \
+    --label "<namespace>:<status>" \
+    --body "$(printf '%s\n\n> Priority: %s · Effort: %s · Clarity: %s\n' \
+        "<context needed to start>" "<priority>" "<effort>" "<clarity>")"
+  ```
+
+  where `<namespace>` is `wrap_up.issues.label_namespace` (default `next`) and
+  `<status>` is one of `urgent|in-progress|ready|waiting|decision`. Ensure each
+  `<namespace>:<status>` label exists first (`gh label create ... --force`).
+
+- **Else (legacy)** — prepend a `## Handover — YYYY-MM-DD` section to
+  `notes/inbox.md` as before (one sentence summary + a checkbox task list).
+
+If there were no next steps, or the user declines, skip this step.
 
 ### 10. Confirm and end
 Report:

@@ -29,6 +29,19 @@ Zero-friction session startup. Within 30 seconds, user knows:
 
 ## Workflow
 
+### Load config
+
+Read `.shulkerbox/config.yml` if present; use the `pickup:` section.
+**Defaults when absent (legacy behavior):**
+
+| Key | Default |
+|---|---|
+| `pickup.next_steps_source` | `inbox` |
+| `pickup.show_agent_queue` | `false` |
+| `pickup.agent_label_prefixes` | `[]` |
+| `pickup.activity_log_path` | `notes/activity-log.md` |
+| `pickup.inbox_fallback` | `notes/inbox.md` |
+
 ### 0. Check Recent Activity (Git Context)
 
 Before reading the inbox, check for uncommitted work and recent commit activity to detect mid-task resumption:
@@ -64,19 +77,24 @@ This helps detect:
 
 **Integration:** This git context is shown FIRST, then handover items from inbox, providing complete continuity.
 
-### 1. Read Inbox
+### 1. Read the backlog
 
-Open `notes/inbox.md` and find the most recent handover section:
+**If `pickup.next_steps_source` is `issues`:** read open next-step issues from
+GitHub, grouped by status label, in priority order:
 
-```markdown
-## Handover — YYYY-MM-DD
+```bash
+for s in urgent in-progress ready waiting decision; do
+  echo "== next:$s =="
+  gh issue list --state open --label "next:$s" --json number,title,url \
+    --jq '.[] | "  #\(.number) \(.title)"'
+done
 ```
 
-Extract all items with their:
-- Tags (`@urgent`, `@in-progress`, `@ready`, `@blocked`, `@decision-needed`)
-- Priority levels
-- Context
-- Status
+Use `next:urgent → next:in-progress → next:ready → next:waiting → next:decision`
+ordering. If the `next:*` label namespace is customized, substitute it.
+
+**Else (`inbox`):** open `pickup.inbox_fallback` and read the most recent
+`## Handover — YYYY-MM-DD` section as before.
 
 ### 2. Check for Resolved Blockers
 
@@ -95,6 +113,23 @@ Sort items by:
 5. **@blocked** items last (gray)
 
 Select top 3-5 items to present (don't overwhelm with full list).
+
+### 3.5. Agent queue (if `pickup.show_agent_queue`)
+
+Skip if false. Surface agent-filed findings as a **separate, secondary** section
+so they don't blur with the user's own next-steps:
+
+```bash
+for p in <agent_label_prefixes>; do
+  echo "== $p =="
+  gh issue list --state open --search "label:$p" --json number,title \
+    --jq '.[] | "  #\(.number) \(.title)"' | head -10
+done
+```
+
+where `<agent_label_prefixes>` is `pickup.agent_label_prefixes` (e.g.
+`lachesis clotho atropos`). Present this under the user's next-steps, clearly
+labelled "Agent queue", and do not auto-start work on these.
 
 ### 4. Present Pickup
 
@@ -121,6 +156,10 @@ Welcome back! Here's where we left off:
 
 Which would you like to tackle first?
 ```
+
+When `pickup.next_steps_source` is `issues`, reference issue numbers (e.g.
+"#127") so the user can open them directly, and treat "no open `next:*` issues"
+as the empty state (then fall back to recent activity-log narrative + git context).
 
 ### 5. Await User Choice
 
@@ -326,6 +365,10 @@ Recent activity from activity log:
 
 What would you like to work on today?
 ```
+
+When `pickup.next_steps_source` is `issues`, reference issue numbers (e.g.
+"#127") so the user can open them directly, and treat "no open `next:*` issues"
+as the empty state (then fall back to recent activity-log narrative + git context).
 
 ## Best Practices
 
