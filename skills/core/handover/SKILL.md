@@ -89,9 +89,21 @@ Tag items with:
 - `@ready` - Can start anytime
 - `@waiting-on:{person/thing}` - External dependency
 
-### 5. Write to Inbox
+### 5. Write the handover
 
-Prepend to `notes/inbox.md`:
+Read `.shulkerbox/config.yml` (`wrap_up.issues.enabled`, default `false`).
+
+**If issues are enabled:** file one GitHub Issue per next-step using
+`gh issue create`, labelled `<namespace>:<status>` (namespace default `next`;
+status one of `next:urgent|next:in-progress|next:ready|next:waiting|next:decision`),
+with this body metadata line:
+
+```
+> Priority: <urgent|high|medium|low> · Effort: <quick|medium|large> · Clarity: <clear|needs-context|needs-decision>
+```
+
+**Else (legacy):** prepend a `## Handover — YYYY-MM-DD` section to
+`notes/inbox.md` using the categorized template below.
 
 ```markdown
 ## Handover — YYYY-MM-DD
