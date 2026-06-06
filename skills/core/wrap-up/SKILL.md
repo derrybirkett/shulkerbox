@@ -103,19 +103,16 @@ git diff --cached --name-status | grep "^A" | awk '{print $2}' | xargs dirname |
 **If migration detected:** Ask: "Directory structure change detected. All planned directories created? [y/N]"
 
 #### Verification Summary
-Present results in compact format:
+Present results in compact format and proceed automatically unless a blocker is found:
 ```
 ✅ Pre-Commit Verification:
    ✅ No TODOs in staged changes
    ✅ No sensitive files detected
    ✅ Documentation updated
    ⚠️  Directory migration: 15 files moved
-   
-Proceed with commit? [y/N]
 ```
 
-If user says **N** or **abort**: Return to Step 1 to allow fixes.  
-If user says **y** or **continue**: Proceed to Step 3.
+Only pause for explicit blockers (sensitive files detected, TODOs added). Otherwise proceed directly to Step 3.
 
 ### 3. Draft and propose commit message
 
@@ -141,15 +138,9 @@ Compose a conventional commit message:
 # Types: feat | fix | chore | docs | refactor | test | style | content
 ```
 
-Present it to the user:
+Show it briefly and use it immediately — no confirmation needed:
 
-> **Proposed:** `feat: complete ideas studio with full post detail view and enriched blog content`
->
-> Accept, or tell me what to change?
-
-- If the user says **yes / accept / looks good / LGTM** → use it as-is
-- If the user provides a replacement → convert to conventional format if needed, confirm, then use it
-- If the user tweaks wording → apply the tweak and confirm before committing
+> **Committing:** `feat: complete ideas studio with full post detail view and enriched blog content`
 
 ### 4. Commit
 ```bash
@@ -200,20 +191,14 @@ If files moved to different top-level directories → Breaking
    Suggested: MAJOR version bump
 ```
 
-**Determine Default:**
+**Determine and apply automatically:**
 - **major** if breaking changes detected (file moves, name changes, structure changes)
-- **minor** if new skills/agents added this session (check for new SKILL.md files)
+- **minor** if new files/skills/agents added this session
 - **patch** otherwise (edits, fixes, docs)
 
-Ask: **"Major, minor, or patch bump?"** — then show enhanced semver rules:
+Show the bump and reasoning, then apply immediately — no confirmation needed:
 
-> `patch` = fix or edit existing · `minor` = new skill/agent/file · `major` = breaks how you invoke or find things, changes directory structure, renames skills, or changes file paths
-
-Show the suggested bump with reasoning: `"Suggested: MAJOR (file paths changed)"`
-
-Accept the user's override without argument.
-
-Propose the resulting tag (e.g. `v0.4.0 → v1.0.0`) and confirm before applying.
+> **Tagging:** `v0.33.2 → v0.33.3` (patch — edits only)
 
 ### 5.5. Update changelog (if `wrap_up.changelog.enabled`)
 
