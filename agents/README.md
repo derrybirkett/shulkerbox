@@ -71,6 +71,26 @@ copilot agent designer-agent "Review layout"
 
 ## Available Agents
 
+### product
+End-to-end product developer. Drives a seed idea through six stages — capability scan → define → architect → scaffold → build slice → review — using whichever Bloom repos are mounted at `.bloom/*`. Falls back to embedded defaults so it still works in shulkerbox-only repos.
+
+**Specialization:**
+- Stage-gated product delivery (with optional autonomous mode)
+- Composing soul, idea, stack, council when present
+- Graceful degradation when only shulkerbox is mounted
+- Slice-sized end-to-end delivery over big-bang architecture
+
+**Modes:**
+- Stage-gated (default — stops between stages for review)
+- `/product run` (autonomous — runs all stages, still stops on block/test fail)
+- `/product resume` (infer current stage from `docs/` + git, continue)
+
+**Usage:** `/product "<seed idea or user story>"`
+
+**Related Skills:** bloom-define, note-that, handover, design-audit (via designer subagent)
+
+[→ Full documentation](product/AGENT.md)
+
 ### productivity-agent
 A personal systems coach persona that maintains your development moleskine. Surfaces patterns, identifies what to build next, and keeps your skills repository lean and self-improving.
 
