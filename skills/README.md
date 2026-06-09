@@ -55,6 +55,28 @@ metadata:
 
 ## Available Skills
 
+### Bloom Skills
+
+#### product
+End-to-end product developer. Drives a seed idea through six stages — capability scan → define → architect → scaffold → build slice → review — using whichever Bloom repos are mounted at `.bloom/*`. Falls back to embedded defaults so it works in shulkerbox-only repos.
+
+**Usage:** `/product "<seed>"`
+
+**Sub-commands:**
+- `/product run "<seed>"` — autonomous (stops only on block/test fail)
+- `/product resume` — pick up from current `docs/` + git state
+- `/product status` — capability scan + current stage + next action
+- `/product next-slice` — jump to Stage 4 with next priority surface
+
+**Aliases:** `/develop`, `/build-product` (both route to `/product`)
+
+**Related:** [product agent](../agents/product/AGENT.md), [bloom-define](core/bloom-define/SKILL.md)
+
+#### bloom-define
+Seed the product spine (`docs/`) from a one-line idea or user story. Populates intent, mission, north-star, product-surfaces, architecture, and IA-graph at a high level for review before any build-out.
+
+**Usage:** `/bloom-define "<seed>"`
+
 ### Workflow Skills
 
 #### wrap-up
