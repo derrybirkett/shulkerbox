@@ -80,11 +80,31 @@ Seed the product spine (`docs/`) from a one-line idea or user story. Populates i
 ### Workflow Skills
 
 #### wrap-up
-End-of-session workflow. Stages all changes, prompts for a conventional commit message, increments the patch version tag, pushes to origin main with tags, and prepares handover notes.
+End-of-session workflow. Stages changes, drafts a conventional commit message, runs pre-commit and manifest-drift checks, manages version tags, and handles both PR-based and direct-to-main workflows (PR-based is the bloom default). Optionally updates the changelog, publishes a GitHub release, files next-step issues, and writes the activity log — driven by `.shulkerbox/config.yml`.
 
-**Usage:** `/wrap-up` or `wrap-up` (if script is in PATH)
+**Usage:** `/wrap-up [optional commit message]`
+
+#### handover
+End-of-session context capture. Writes what the next session needs to pick up seamlessly.
+
+**Usage:** `/handover`
+
+#### pickup
+Start-of-session context restoration. Shows where the last session left off; the counterpart to handover.
+
+**Usage:** `/pickup`
 
 ### Productivity Skills
+
+#### note-that
+Frictionless insight capture. Say "note that ..." mid-conversation and the observation is captured to notes without breaking flow.
+
+**Usage:** `/note-that "<observation>"` or just "note that ..."
+
+#### sovereyn
+Strategic coaching. Cross-references stated goals against actual shipping behaviour, surfaces drift, asks hard questions.
+
+**Usage:** `/sovereyn`
 
 #### activity-log
 Maintains a running log of git commits and work sessions. Auto-populated by post-commit hook, queryable for standup prep, learning reviews, and reflection.

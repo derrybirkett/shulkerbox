@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# post-commit-activity-log — append each commit to notes/activity-log.md.
+#
+# Implements soul.yaml automation_philosophy.on_commit: update_activity_log.
+# Entry format matches templates/notes/activity-log.md; the activity-log
+# skill queries and enriches these entries.
+#
+# The appended entry is left uncommitted on purpose — enrich it with notes,
+# then it rides along with the next commit or wrap-up.
+#
+# Install into a product:
+#   cp .bloom/shulkerbox/hooks/git/post-commit-activity-log .git/hooks/post-commit
+#   chmod +x .git/hooks/post-commit
+
+set -euo pipefail
+
+log_file="notes/activity-log.md"
+
+# Only log in repos that opted in by having the notes/ scaffold.
+[[ -f "$log_file" ]] || exit 0
+
+repo=$(basename "$(git rev-parse --show-toplevel)")
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+subject=$(git log -1 --pretty=%s)
+stamp=$(date "+%Y-%m-%d %H:%M")
+
+{
+  echo ""
+  echo "## $stamp | $repo ($branch)"
+  echo "**$subject**"
+} >>"$log_file"

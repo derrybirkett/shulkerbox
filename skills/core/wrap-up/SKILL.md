@@ -237,6 +237,27 @@ git commit --amend --no-edit
 (`--no-edit` preserves the commit message already approved in step 3. The commit
 has not been pushed yet at this point, so amending is safe.)
 
+### 5.7. Manifest drift check
+
+Manifests that list other files rot silently. Before tagging, verify the ones
+present in this repo and fix any drift now (fold the fix into this session's
+commit) rather than deferring:
+
+- **`skills/README.md`** — if `skills/**/SKILL.md` files exist, every skill's
+  `name:` must appear in the README's Available Skills section:
+  ```bash
+  grep -h "^name:" skills/*/*/SKILL.md | sed 's/name: //' | sort
+  ```
+  Compare against the README; add any missing entries.
+- **`council.yaml`** (or any manifest with an `advisors:`-style list) — the
+  list must match the actual directories (`ls advisors/`).
+- **`versions.yaml`** (bloom hub) — if this tag is a minor or major bump of a
+  bloom member repo, append a release row to the hub's `versions.yaml` in the
+  same session; its compatibility rules require a new row per minor bump.
+
+If a mismatch cannot be fixed in this session, say so explicitly in the final
+report (step 10) — never tag silently over known drift.
+
 ### 6. Tag
 ```bash
 git tag v<new-version>
