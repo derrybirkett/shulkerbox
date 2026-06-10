@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# drift-check — verify a repo's manifests match reality.
+#
+# Run from the repo root. Exits non-zero with a DRIFT report when a manifest
+# has fallen out of sync with the files it describes. The wrap-up skill runs
+# this before tagging (step 5.7); never tag over known drift.
+#
+# Checks (each runs only when the relevant files exist, so the script is
+# safe in any bloom repo or product):
+#   1. skills/README.md mentions every skill name found in skills/**/SKILL.md
+#   2. an `advisors:` list in council.yaml matches the advisors/ directories
+#   3. versions.yaml's current bloom version has a row in its releases history
+
+set -uo pipefail
+
+fail=0
+
+# 1. Skills README completeness
+if [[ -f skills/README.md ]] && compgen -G "skills/*/*/SKILL.md" >/dev/null; then
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    if ! grep -q "$name" skills/README.md; then
+      echo "DRIFT: skill '$name' is not mentioned in skills/README.md"
+      fail=1
+    fi
+  done < <(sed -n 's/^name:[[:space:]]*//p' skills/*/*/SKILL.md)
+fi
+
+# 2. Advisor manifest vs advisors/ directories
+if [[ -f council.yaml && -d advisors ]]; then
+  for dir in advisors/*/; do
+    advisor=$(basename "$dir")
+    if ! grep -qE "^[[:space:]]*-[[:space:]]*${advisor}[[:space:]]*$" council.yaml; then
+      echo "DRIFT: advisor '$advisor' is not listed in council.yaml"
+      fail=1
+    fi
+  done
+fi
+
+# 3. versions.yaml release row for the current bloom version
+if [[ -f versions.yaml ]] && grep -q "^releases:" versions.yaml; then
+  current=$(sed -n 's/^bloom:[[:space:]]*"\{0,1\}\([0-9][^" ]*\)"\{0,1\}.*/\1/p' versions.yaml | head -1)
+  if [[ -n "$current" ]] && \
+     ! sed -n '/^releases:/,$p' versions.yaml | grep -q "bloom:[[:space:]]*\"\{0,1\}${current}"; then
+    echo "DRIFT: versions.yaml has no release row for current bloom version ${current}"
+    fail=1
+  fi
+fi
+
+if [[ "$fail" -eq 0 ]]; then
+  echo "drift-check: OK"
+fi
+exit "$fail"

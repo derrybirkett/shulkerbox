@@ -239,31 +239,29 @@ has not been pushed yet at this point, so amending is safe.)
 
 ### 5.7. Manifest drift check
 
-Manifests that list other files rot silently. Before tagging, verify the ones
-present in this repo and fix any drift now (fold the fix into this session's
-commit) rather than deferring:
+Manifests that list other files rot silently. Run the checker:
 
-- **`skills/README.md`** — if `skills/**/SKILL.md` files exist, every skill's
-  `name:` must appear in the README's Available Skills section:
-  ```bash
-  grep -h "^name:" skills/*/*/SKILL.md | sed 's/name: //' | sort
-  ```
-  Compare against the README; add any missing entries.
-- **`council.yaml`** (or any manifest with an `advisors:`-style list) — the
-  list must match the actual directories (`ls advisors/`).
-- **`versions.yaml`** (bloom hub) — if this tag is a minor or major bump of a
-  bloom member repo, append a release row to the hub's `versions.yaml` in the
-  same session; its compatibility rules require a new row per minor bump.
+```bash
+.bloom/shulkerbox/scripts/bin/drift-check 2>/dev/null || scripts/bin/drift-check
+```
+
+(First path when shulkerbox is mounted at `.bloom/`, second when working in
+shulkerbox itself.) Fix any reported drift now — fold the fix into this
+session's commit — rather than deferring.
+
+If the script is unavailable, check manually: every `skills/**/SKILL.md` name
+appears in `skills/README.md`; any `advisors:` manifest list matches the
+`advisors/` directories; a minor/major bump of a bloom member repo gets a
+release row in the hub's `versions.yaml`.
 
 If a mismatch cannot be fixed in this session, say so explicitly in the final
 report (step 10) — never tag silently over known drift.
 
-### 6. Tag
-```bash
-git tag v<new-version>
-```
+### 6. Detect workflow, push, merge — then tag
 
-### 7. Detect workflow and push
+**Tags are only ever created on `main`.** Never tag a feature-branch commit:
+a squash merge produces a different sha on main, orphaning the tag. The tag
+is applied after the commit lands on main, in each path below.
 
 First, detect the current branch and workflow:
 
@@ -272,22 +270,24 @@ current_branch=$(git branch --show-current)
 main_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
 ```
 
-**If on main branch:**
+**If on main branch (direct-to-main workflow):**
 ```bash
-git push origin main --tags
+git push origin main
+git tag v<new-version>
+git push origin v<new-version>
 ```
-Proceed to step 8.
+Proceed to step 7.
 
 **If on feature branch:**
 
 The project uses a PR-based workflow. Handle it:
 
-#### 7a. Push feature branch
+#### 6a. Push feature branch
 ```bash
 git push origin $current_branch
 ```
 
-#### 7b. Check for existing PR
+#### 6b. Check for existing PR
 ```bash
 gh pr view --json state,number 2>/dev/null
 ```
@@ -319,35 +319,38 @@ Ask: **"PR #<number> is ready to merge. Merge and return to main? [Y/n]"**
 
 If yes:
 
-#### 7c. Merge PR and cleanup
+#### 6c. Merge PR, tag the squash commit, and cleanup
 ```bash
 gh pr merge --squash --delete-branch
 git checkout $main_branch
 git pull origin $main_branch
+git tag v<new-version>
+git push origin v<new-version>
 git branch -d $current_branch 2>/dev/null || true
 git fetch --prune
 ```
 
+The tag is created here — on the squash commit that actually landed on main —
+not on the pre-merge feature-branch commit.
+
 **If user says no:**
 Report: "Staying on feature branch. Next session will continue here or you can switch to main manually."
 
-Skip tagging (tags only apply to main branch).
+**No tag is created this session** — the version bump determined in step 5 is
+applied at the next wrap-up (or pickup) once the PR has merged.
 
-Proceed to step 8.
+Proceed to step 8 (skip step 7 — there is no tag to release).
 
 **If `gh` command not found:**
 Report: "GitHub CLI not installed. Push completed. Create PR manually at: `git remote get-url origin`"
 
-### 7.5. Publish GitHub Release (if `wrap_up.releases.enabled` and tag is on main)
+### 7. Publish GitHub Release (if `wrap_up.releases.enabled`)
 
-Skip if `wrap_up.releases.enabled` is false.
+Skip if `wrap_up.releases.enabled` is false, or if no tag was created this
+session (merge declined in step 6). Tags are only ever created on main (step
+6), so when a tag exists, releasing is always safe.
 
-**Only publish a release when the tag is reachable from `main`** — i.e. the push
-in step 7 went to `main`. If step 7 used the feature-branch / PR path, the tag is
-on an unmerged commit; a release would orphan. In that case, **defer**: report
-"release deferred until vX.Y.Z is merged to main" and skip.
-
-When on the main path, publish using this version's changelog section as the body:
+Publish using this version's changelog section as the body:
 
 ```bash
 awk -v v="X.Y.Z" '$0 ~ "^## \\["v"\\]"{f=1;print;next} /^## \[/{f=0} f' \

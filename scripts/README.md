@@ -24,6 +24,22 @@ wrap-up
 **Requirements:**
 - Claude Code CLI (`claude`) must be installed and in PATH
 
+### bin/drift-check
+Verifies a repo's manifests match reality: every `skills/**/SKILL.md` name is
+mentioned in `skills/README.md`, any `advisors:` list in `council.yaml` matches
+the `advisors/` directories, and `versions.yaml`'s current bloom version has a
+release row. Each check runs only when the relevant files exist, so it is safe
+in any bloom repo or product. Exits non-zero with a `DRIFT:` report on mismatch.
+
+The wrap-up skill runs this before tagging (step 5.7).
+
+**Usage:**
+```bash
+# from the repo root
+.bloom/shulkerbox/scripts/bin/drift-check   # in a product
+scripts/bin/drift-check                     # in shulkerbox itself
+```
+
 ## Adding Scripts to PATH
 
 Add the bin directory to your PATH for easy access:
