@@ -1,9 +1,9 @@
 ---
 name: wrap-up
-description: End-of-session workflow. Stages changes, commits with conventional message, handles both direct-to-main and PR-based workflows, manages version tags, and prepares handover notes.
+description: General end-of-session workflow. Reviews the worktree, stages an explicit change set, verifies risk, commits with a conventional message, optionally updates logs/changelog, and prepares a PR/tag/release handover without unsafe direct-to-main defaults.
 user-invocable: true
 disable-model-invocation: true
-argument-hint: optional commit message
+argument-hint: optional commit message or scope
 metadata:
   tags: [git, commit, versioning, workflow, session, release, handover, pr]
   category: core
@@ -12,435 +12,416 @@ metadata:
 
 # Wrap Up
 
-End-of-session workflow that commits, tags, and pushes.
+General end-of-session workflow for closing a coding or ops session without
+sweeping in unrelated work. It is intentionally conservative by default:
+explicit staging, no direct push to `main`, no release/tag action without a
+checkpoint, and no silent continuation over known drift or sensitive files.
 
 ## Trigger
 
 `wrap up` or `/wrap-up`
 
+## Principles
+
+- Protect unrelated work first. Never stage all files blindly in a dirty repo.
+- Keep release actions separate from commit actions unless the user explicitly confirms both.
+- Analyze the change set before committing; after commit, use `git show`, not the emptied index.
+- Prefer feature branches and PRs. Direct-to-main is opt-in repo policy only.
+- Make the final handover useful even if no commit or push happens.
+
 ## Steps
 
-Execute in order. Stop and report if any step fails.
+Execute in order. If a command used for inspection can return non-zero for a
+clean result, handle that explicitly with `|| true` rather than treating it as a
+workflow failure.
 
-### 0. Load config
+### 0. Load Config
 
-Read `.shulkerbox/config.yml` from the repo root if it exists. Use the `wrap_up:`
-section. **If the file or any key is missing, use these defaults (legacy behavior):**
+Read `.shulkerbox/config.yml` from the repo root if it exists. Use the
+`wrap_up:` section. If the file or any key is missing, use these defaults:
 
 | Key | Default |
 |---|---|
+| `wrap_up.main_branch` | detected from `origin/HEAD`, fallback `main`, then `master` |
+| `wrap_up.allow_direct_main` | `false` |
+| `wrap_up.auto_stage_all` | `false` |
+| `wrap_up.require_commit_confirmation` | `true` |
+| `wrap_up.require_push_confirmation` | `true` |
 | `wrap_up.changelog.enabled` | `false` |
 | `wrap_up.changelog.path` | `CHANGELOG.md` |
 | `wrap_up.releases.enabled` | `false` |
 | `wrap_up.issues.enabled` | `false` |
 | `wrap_up.issues.label_namespace` | `next` |
 | `wrap_up.activity_log.enabled` | `true` |
-| `wrap_up.activity_log.path` | `notes/activity-log.md` |
+| `wrap_up.activity_log.path` | first existing path from `ACTIVITY_LOG.md`, `notes/activity-log.md` |
+| `wrap_up.handover.path` | first existing path from `notes/inbox.md`, `HANDOVER.md` |
 | `wrap_up.learnings.target` | `activity_log` |
 
-With defaults, this skill behaves exactly as it did before this config existed
-(handover to inbox, learnings as an activity-log blockquote, no changelog/release).
+Also read repo-local instructions when present, including `AGENTS.md`,
+`CLAUDE.md`, `README.md`, and contributing docs. Repo policy overrides these
+defaults when it is stricter.
 
-### 1. Check status
+### 1. Inspect Worktree
+
 ```bash
-git status
+git status --short --branch
 git diff --stat
+git diff --cached --stat
+git log --oneline -5
 ```
-Show the user what will be staged. If working tree is clean, say so and ask whether to proceed with just a tag bump.
 
-### 2. Stage all changes
+Report:
+- current branch and upstream status
+- changed, deleted, renamed, and untracked files
+- whether staged changes already exist
+- repo-specific wrap-up rules discovered from local instructions
+
+If the worktree is clean, do not propose a commit. Only discuss tag/release work
+if the user explicitly asked for a release wrap-up and the current branch is the
+main branch, up to date with origin.
+
+### 2. Choose Staging Set
+
+Build an explicit proposed staging set from the session context and the visible
+worktree. Group unrelated changes separately.
+
+Default behavior:
+- If `wrap_up.auto_stage_all` is `false`, show the proposed file list and ask for
+  confirmation before staging.
+- If there are unrelated or ambiguous changes, exclude them unless the user
+  explicitly includes them.
+- If the user supplied a scope argument, use it to narrow the proposed staging
+  set.
+
+Only use `git add -A` when all of these are true:
+- the repo config opts into `wrap_up.auto_stage_all: true`, or the user
+  explicitly approves all-file staging for this run
+- the status output has been shown
+- sensitive-file checks are run before commit
+
+Prefer pathspec staging:
+
 ```bash
-git add -A
+git add -- <file-or-dir> [...]
 ```
+
+After staging, show:
+
+```bash
+git diff --cached --stat
+git diff --cached --name-status
+```
+
+If nothing is staged, stop before commit steps and provide handover notes.
 
 ### 2.5. Pre-Commit Verification
 
-Run automated checks before committing to catch common issues:
+Run these checks on the staged change set.
 
-#### Check 1: TODOs and FIXMEs
-```bash
-git diff --cached | grep -E "^\+.*TODO|^\+.*FIXME|^\+.*XXX"
-```
-**If found:** List them and ask: "⚠️  Adding TODO/FIXME markers. Commit anyway? [y/N]"
-
-#### Check 2: Sensitive Files
-```bash
-git diff --cached --name-only | grep -E "\.env$|\.env\.|credentials|secrets|password|private.*key|api.*key|token"
-```
-**If found:** Show warning and require explicit confirmation:
-```
-⚠️  WARNING: Potential sensitive files staged:
-   - .env.local
-   - config/credentials.json
-   
-This is likely a mistake. Proceed? [y/N]
-```
-If user says N, abort to Step 1.
-
-#### Check 3: Broken References (Migration Detection)
-If git shows both deletions and additions (potential migration):
-```bash
-# Detect migration pattern
-deleted_count=$(git diff --cached --diff-filter=D --name-only | wc -l)
-added_count=$(git diff --cached --diff-filter=A --name-only | wc -l)
-```
-**If both > 0:** Check if old paths are referenced in documentation:
-```bash
-git diff --cached --diff-filter=D --name-only | head -3  # Sample old paths
-```
-Then check if README.md is staged:
-```bash
-git diff --cached --name-only | grep -E "README|ARCHITECTURE|docs/"
-```
-**If documentation NOT staged:** Warn: "⚠️  Files moved/deleted but documentation not updated. Proceed? [y/N]"
-
-#### Check 4: Directory Structure Completeness
-If creating new directories (check for "A" status with directory paths):
-```bash
-# List new directories being created
-git diff --cached --name-status | grep "^A" | awk '{print $2}' | xargs dirname | sort -u
-```
-**If migration detected:** Ask: "Directory structure change detected. All planned directories created? [y/N]"
-
-#### Verification Summary
-Present results in compact format and proceed automatically unless a blocker is found:
-```
-✅ Pre-Commit Verification:
-   ✅ No TODOs in staged changes
-   ✅ No sensitive files detected
-   ✅ Documentation updated
-   ⚠️  Directory migration: 15 files moved
-```
-
-Only pause for explicit blockers (sensitive files detected, TODOs added). Otherwise proceed directly to Step 3.
-
-### 3. Draft and propose commit message
-
-Before asking the user, generate a commit message draft automatically:
+#### TODOs and Markers
 
 ```bash
-# Get context for the draft
+git diff --cached | grep -E '^\+.*(TODO|FIXME|XXX)' || true
+```
+
+If found, list them and ask whether to keep them. Default answer is no.
+
+#### Sensitive Files
+
+```bash
+git diff --cached --name-only | grep -Ei '(^|/)\.env($|\.|/)|credentials|secrets|password|private.*key|api.*key|token' || true
+```
+
+If found, stop and require explicit confirmation. Do not continue silently.
+
+#### Destructive or Broad Changes
+
+```bash
+git diff --cached --name-status
+git diff --cached --diff-filter=D --name-only
+```
+
+Warn for large deletions, migrations, generated artifacts, lockfile churn, or
+vendored/dependency directories. If the repo has documentation requirements for
+migrations or ops changes, verify those files are staged too.
+
+#### Repo Checks
+
+Run the repo's lightweight verification command when obvious from local docs or
+Makefile. If no such command exists, say so. Do not invent heavyweight checks.
+
+Examples:
+- `make test`
+- `make lint`
+- `make health`
+- `make infra-scan`
+
+### 3. Analyze Commit and Version Before Committing
+
+Capture metadata while the staged diff still exists:
+
+```bash
 git diff --cached --stat
+git diff --cached --name-status
 git diff --cached --name-only
-git log --oneline -5   # to match the project's commit style
+git diff --cached -- '**/SKILL.md' '**/AGENT.md' 2>/dev/null || true
 ```
 
-Analyse:
-- **Which files changed** — infer the domain (content, app, lib, docs, config)
-- **Scale of change** — number of files and lines to gauge scope
-- **Recent commit style** — match the project's existing vocabulary and phrasing
-- **Branch name** — often signals intent (e.g. `feature/ideas-studio` → ideas/studio work)
+Use this staged metadata for commit summary, release notes, and suggested
+version bump.
 
-Compose a conventional commit message:
+Suggested bump:
+- **major** for breaking interface changes, removals, renames that affect public
+  paths, skill/agent name changes, or incompatible config structure changes
+- **minor** for new user-visible features, new services, new skills/agents, or
+  new operational commands
+- **patch** for fixes, docs, maintenance, small config adjustments, or internal
+  cleanup
+
+Version detection:
+
+```bash
+git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -5
 ```
+
+If no semver tag exists, suggest `v0.1.0`. The bump is a suggestion until the
+push/tag checkpoint.
+
+### 4. Draft Commit Message
+
+Use the optional user argument if it is a valid commit message. Otherwise draft a
+conventional commit from the staged metadata and recent project style:
+
+```text
 <type>: <short description in present tense, lowercase, no trailing period>
-
-# Types: feat | fix | chore | docs | refactor | test | style | content
 ```
 
-Show it briefly and use it immediately — no confirmation needed:
+Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `content`.
 
-> **Committing:** `feat: complete ideas studio with full post detail view and enriched blog content`
+Show one compact checkpoint:
 
-### 4. Commit
+```text
+Ready to commit?
+- Files: <N> staged
+- Message: <message>
+- Suggested version: <old> -> <new> (<reason>)
+- Checks: <passed/skipped/warnings>
+```
+
+If `wrap_up.require_commit_confirmation` is true, wait for confirmation. If the
+user declines, stop before committing and provide handover notes.
+
+### 5. Commit
+
 ```bash
 git commit -m "<formatted message>"
 ```
 
-### 5. Determine next tag
+Record the commit SHA:
+
 ```bash
-git tag --sort=-v:refname | head -5
+git rev-parse --short HEAD
 ```
 
-Find the latest `v*.*.*` tag. If none exists, start at `v0.1.0`.
+For any later change analysis, use:
 
-#### Automatic Breaking Change Detection
-
-Before asking the user, analyze staged changes for breaking change indicators:
-
-**File Moves/Renames (Path Changes):**
 ```bash
-git diff --cached --name-status | grep "^R"
-renamed_count=$(git diff --cached --name-status | grep "^R" | wc -l)
-```
-If `renamed_count > 0` → Likely breaking (affects imports, references, symlinks)
-
-**Skill/Agent Metadata Changes:**
-```bash
-git diff --cached -- '**/SKILL.md' | grep -E "^[+-]name:"
-git diff --cached -- '**/AGENT.md' | grep -E "^[+-]name:"
-git diff --cached -- '**/SKILL.md' | grep -E "^[+-]user-invocable:"
-```
-If skill/agent names or invocability changed → Breaking
-
-**Directory Structure Changes:**
-```bash
-# Check if files moved between directories (not just renamed in place)
-git diff --cached --name-status | awk '$1 == "R" {print $2, $3}' | \
-  awk '{split($1,a,"/"); split($2,b,"/"); if(a[1] != b[1]) print}'
-```
-If files moved to different top-level directories → Breaking
-
-**Present Detection Results:**
-```
-🔍 Breaking Change Analysis:
-   ✅ 15 files moved between directories (skills/ reorganization)
-   ✅ Directory structure changed (flat → categorized)
-   ⚠️  This appears to be a BREAKING CHANGE
-   
-   Suggested: MAJOR version bump
+git show --name-status --format= HEAD
 ```
 
-**Determine and apply automatically:**
-- **major** if breaking changes detected (file moves, name changes, structure changes)
-- **minor** if new files/skills/agents added this session
-- **patch** otherwise (edits, fixes, docs)
+### 5.5. Update Activity Log and Changelog
 
-Show the bump and reasoning, then apply immediately — no confirmation needed:
-
-> **Tagging:** `v0.33.2 → v0.33.3` (patch — edits only)
-
-### 5.5. Update changelog (if `wrap_up.changelog.enabled`)
-
-Skip this entire step if `wrap_up.changelog.enabled` is false.
-
-Open the changelog at `wrap_up.changelog.path`. Move any items under
-`## [Unreleased]` into a new dated section and add a curated entry for the version
-chosen in step 5 (without the leading `v`), dated today:
+If `wrap_up.activity_log.enabled` is true and the activity-log path exists,
+prepend a slim narrative entry:
 
 ```markdown
-## [Unreleased]
+## YYYY-MM-DD | <short session title>
 
-## [X.Y.Z] — YYYY-MM-DD
+**Commit:** <short-sha or none>
+**Version:** <suggested or created tag, if relevant>
 
-[One curated sentence — reuse the session summary, phrased for a reader.]
+<One or two short paragraphs: what changed, why, and what remains.>
 
-### Added
-- [user-facing additions, if any]
-
-### Changed
-- [user-facing changes, if any]
-
-### Fixed
-- [user-facing fixes, if any]
+---
 ```
 
-Omit any of Added/Changed/Fixed with no entries; keep a fresh empty
-`## [Unreleased]` at the top. Then fold it into the existing commit so the tag
-will include it:
+If `wrap_up.changelog.enabled` is true, update `wrap_up.changelog.path` before
+push/tag. Move `Unreleased` items into a dated release section only when a tag
+will actually be created this session.
+
+If either file is changed after the commit, fold it in before push:
 
 ```bash
-git add <wrap_up.changelog.path>
+git add -- <log-or-changelog-path>
 git commit --amend --no-edit
 ```
 
-(`--no-edit` preserves the commit message already approved in step 3. The commit
-has not been pushed yet at this point, so amending is safe.)
+Then refresh the short SHA.
 
-### 5.7. Manifest drift check
+### 5.7. Drift and Manifest Check
 
-Manifests that list other files rot silently. Run the checker:
+Run repo-specific drift checks before pushing or tagging. Use the configured
+check if present; otherwise use obvious local scripts only when they exist.
+
+For Shulkerbox-style repos:
 
 ```bash
 .bloom/shulkerbox/scripts/bin/drift-check 2>/dev/null || scripts/bin/drift-check
 ```
 
-(First path when shulkerbox is mounted at `.bloom/`, second when working in
-shulkerbox itself.) Fix any reported drift now — fold the fix into this
-session's commit — rather than deferring.
+If drift is found, fix it and amend the commit before push. If it cannot be
+fixed in this session, do not tag silently; report the drift as a blocker.
 
-If the script is unavailable, check manually: every `skills/**/SKILL.md` name
-appears in `skills/README.md`; any `advisors:` manifest list matches the
-`advisors/` directories; a minor/major bump of a bloom member repo gets a
-release row in the hub's `versions.yaml`.
+### 6. Push, PR, Merge, Tag
 
-If a mismatch cannot be fixed in this session, say so explicitly in the final
-report (step 10) — never tag silently over known drift.
-
-### 6. Detect workflow, push, merge — then tag
-
-**Tags are only ever created on `main`.** Never tag a feature-branch commit:
-a squash merge produces a different sha on main, orphaning the tag. The tag
-is applied after the commit lands on main, in each path below.
-
-First, detect the current branch and workflow:
+Detect workflow:
 
 ```bash
 current_branch=$(git branch --show-current)
-main_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || true)
 ```
 
-**If on main branch (direct-to-main workflow):**
+If `main_branch` is empty, use the configured `wrap_up.main_branch`, then `main`,
+then `master` if that branch exists.
+
+#### If on Main
+
+If `wrap_up.allow_direct_main` is false, do not push directly. Ask whether to
+create a feature branch from the current commit or leave the commit local for
+manual handling.
+
+Only if direct-main is explicitly allowed:
+
 ```bash
-git push origin main
+git status --short --branch
+```
+
+Show a push/tag checkpoint and wait if `wrap_up.require_push_confirmation` is
+true:
+
+```text
+Ready to push/tag?
+- Branch: <main_branch>
+- Commit: <sha>
+- Tag: <new tag or none>
+- Remote: origin
+```
+
+Then:
+
+```bash
+git push origin <main_branch>
 git tag v<new-version>
 git push origin v<new-version>
 ```
-Proceed to step 7.
 
-**If on feature branch:**
+Create tags only after the commit is on the main branch.
 
-The project uses a PR-based workflow. Handle it:
+#### If on a Feature Branch
 
-#### 6a. Push feature branch
+Push only after confirmation when required:
+
 ```bash
-git push origin $current_branch
+git push origin <current_branch>
 ```
 
-#### 6b. Check for existing PR
+If `gh` is available, inspect PR state:
+
 ```bash
-gh pr view --json state,number 2>/dev/null
+gh pr view --json state,number,url,mergeable,reviewDecision,statusCheckRollup 2>/dev/null || true
 ```
 
-**If no PR exists:**
-Ask: **"Create pull request for this branch? [Y/n]"**
+If no PR exists, ask whether to create one. Use a concise body:
 
-If yes:
-```bash
-gh pr create --title "<commit message>" --body "$(cat <<'EOF'
+```markdown
 ## Summary
-<Brief description from commit>
+<brief description>
 
 ## Changes
-<List key changes>
+- <key change>
 
-## Test plan
-- [ ] <Test items>
-
-🤖 Generated with Claude Code
-EOF
-)"
+## Verification
+- <commands run or not run>
 ```
 
-**If PR exists and is open:**
-Show PR URL and status.
+If a PR exists, show URL, checks, review state, and mergeability. Ask before
+merging. If the user confirms merge:
 
-Ask: **"PR #<number> is ready to merge. Merge and return to main? [Y/n]"**
-
-If yes:
-
-#### 6c. Merge PR, tag the squash commit, and cleanup
 ```bash
 gh pr merge --squash --delete-branch
-git checkout $main_branch
-git pull origin $main_branch
+git checkout <main_branch>
+git pull --ff-only origin <main_branch>
 git tag v<new-version>
 git push origin v<new-version>
-git branch -d $current_branch 2>/dev/null || true
+git branch -d <old-feature-branch> 2>/dev/null || true
 git fetch --prune
 ```
 
-The tag is created here — on the squash commit that actually landed on main —
-not on the pre-merge feature-branch commit.
+If merge is declined or blocked, do not tag. Report that the suggested version
+applies after the PR lands.
 
-**If user says no:**
-Report: "Staying on feature branch. Next session will continue here or you can switch to main manually."
+### 7. Publish GitHub Release
 
-**No tag is created this session** — the version bump determined in step 5 is
-applied at the next wrap-up (or pickup) once the PR has merged.
-
-Proceed to step 8 (skip step 7 — there is no tag to release).
-
-**If `gh` command not found:**
-Report: "GitHub CLI not installed. Push completed. Create PR manually at: `git remote get-url origin`"
-
-### 7. Publish GitHub Release (if `wrap_up.releases.enabled`)
-
-Skip if `wrap_up.releases.enabled` is false, or if no tag was created this
-session (merge declined in step 6). Tags are only ever created on main (step
-6), so when a tag exists, releasing is always safe.
-
-Publish using this version's changelog section as the body:
+Skip unless `wrap_up.releases.enabled` is true and a tag was created this
+session. Ask before publishing unless repo config explicitly disables that
+checkpoint.
 
 ```bash
-awk -v v="X.Y.Z" '$0 ~ "^## \\["v"\\]"{f=1;print;next} /^## \[/{f=0} f' \
-  <wrap_up.changelog.path> > /tmp/release-notes.md
-gh release create vX.Y.Z --title "vX.Y.Z" --notes-file /tmp/release-notes.md
+gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <release-notes-file>
 ```
 
-Substitute the real version for `X.Y.Z` / `vX.Y.Z`. If `gh release create` reports
-the release already exists, report it and continue (do not fail the wrap-up).
+If the release already exists, report it and continue.
 
-### 8. Document session in activity log (if `wrap_up.activity_log.enabled`)
+### 8. Capture Learnings
 
-Skip if `wrap_up.activity_log.enabled` is false or the directory of
-`wrap_up.activity_log.path` does not exist.
+Suggest concrete learnings from mistakes, blockers, or repo-specific patterns
+observed this session. Ask the user to confirm which to keep.
 
-Prepend a **slim narrative** entry to `wrap_up.activity_log.path` — the "why / how
-it went" story only. **Do not** duplicate learnings (those go to memory in step
-8.5) or next-steps (those go to issues in step 9):
+- If `wrap_up.learnings.target` is `memory`, write them to the repo's memory
+  mechanism if one exists.
+- If `wrap_up.learnings.target` is `activity_log`, append them as short
+  blockquotes under the activity-log entry.
+- If no durable learning location exists, include them in final handover only.
+
+### 9. Prepare Handover
+
+Extract next steps from the session and ask whether to file them.
+
+If `wrap_up.issues.enabled` is true, create GitHub issues with labels under
+`wrap_up.issues.label_namespace`.
+
+Otherwise, if `wrap_up.handover.path` exists, prepend:
 
 ```markdown
-## YYYY-MM-DD | <short session title>
+## Handover - YYYY-MM-DD
 
-**Version:** vX.Y.Z
+<one sentence summary>
 
-<One or two paragraphs of narrative: what was attempted, key decisions, how it went.>
-
----
+- [ ] <next step>
 ```
 
-### 8.5. Capture learnings
+If no handover path exists, include the handover in the final response.
 
-Ask the user for learning notes, **wait for their response**, and **suggest
-specific candidate learnings** drawn from this session rather than asking an
-open-ended question. For example: "Worth saving as learnings: (a) <X>, (b) <Y>.
-Any of those, or others?"
+### 10. Final Report
 
-- If `wrap_up.learnings.target` is `memory`: for each confirmed learning, write a
-  memory file under the project memory directory and add a one-line pointer to
-  `MEMORY.md` (follow the memory format already used in this repo).
-- If `wrap_up.learnings.target` is `activity_log` (legacy default): append each
-  learning as a blockquote under the activity-log entry from step 8.
+Report briefly:
+- commit SHA, or none
+- branch and push status
+- PR URL, if created or updated
+- tag/release status
+- activity log/changelog/handover status
+- verification commands run
+- remaining next steps
 
-### 9. Prepare handover
-
-Review the conversation and extract next steps that were discussed or agreed.
-Present them to the user for confirmation:
-
-> **During this session, we agreed on these next steps:**
-> - [item] — proposed status: <urgent|in-progress|ready|waiting|decision>
-> - ...
->
-> **File these?**
-
-If confirmed:
-
-- **If `wrap_up.issues.enabled` is true** — file one GitHub Issue per next step:
-
-  ```bash
-  gh issue create \
-    --title "<concise next-step title>" \
-    --label "<namespace>:<status>" \
-    --body "$(printf '%s\n\n> Priority: %s · Effort: %s · Clarity: %s\n' \
-        "<context needed to start>" "<priority>" "<effort>" "<clarity>")"
-  ```
-
-  where `<namespace>` is `wrap_up.issues.label_namespace` (default `next`) and
-  `<status>` is one of `urgent|in-progress|ready|waiting|decision`. Ensure each
-  `<namespace>:<status>` label exists first (`gh label create ... --force`).
-
-- **Else (legacy)** — prepend a `## Handover — YYYY-MM-DD` section to
-  `notes/inbox.md` as before (one sentence summary + a checkbox task list).
-
-If there were no next steps, or the user declines, skip this step.
-
-### 10. Confirm and end
-Report:
-- Commit SHA (short, or "none" if just tag bump)
-- Tag applied
-- Push status
-- Activity log updated
-- Handover written (if applicable)
-
-Then say **"Session wrapped"** and stop.
+End with: `Session wrapped`.
 
 ---
 
-## Git workflow conventions
+## Git Workflow Conventions
 
-- Branch strategy: feature branches off `main` (enforced by pre-push hook)
-- Merge strategy: squash merge via PR
-- Commit convention: conventional commits (feat|fix|chore|docs|refactor|test|style)
-- All changes go through feature branches and PRs (no direct push to `main`)
-- `main` is always the source of truth
+Default convention:
+- feature branches off the main branch
+- squash merge by PR
+- tags created only on main after merge
+- no direct push to main unless repo config explicitly allows it
+- conventional commits for human-readable history
