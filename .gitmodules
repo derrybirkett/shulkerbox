@@ -1,0 +1,30 @@
+[submodule "skills/core/find-skills"]
+	path = skills/core/find-skills
+	url = https://github.com/vercel-labs/skills.git
+[submodule "skills/core/agent-browser"]
+	path = skills/core/agent-browser
+	url = https://github.com/vercel-labs/agent-browser.git
+[submodule "skills/development/caveman"]
+	path = skills/development/caveman
+	url = https://github.com/juliusbrussee/caveman.git
+[submodule "skills/development/impeccable"]
+	path = skills/development/impeccable
+	url = https://github.com/pbakaus/impeccable.git
+[submodule "skills/productivity/taste-skill"]
+	path = skills/productivity/taste-skill
+	url = https://github.com/leonxlnx/taste-skill.git
+[submodule "skills/productivity/remotion"]
+	path = skills/productivity/remotion
+	url = https://github.com/remotion-dev/skills.git
+[submodule "skills/productivity/hyperframes"]
+	path = skills/productivity/hyperframes
+	url = https://github.com/heygen-com/hyperframes.git
+[submodule "skills/productivity/gsap-skills"]
+	path = skills/productivity/gsap-skills
+	url = https://github.com/greensock/gsap-skills.git
+[submodule "skills/productivity/marketingskills"]
+	path = skills/productivity/marketingskills
+	url = https://github.com/coreyhaines31/marketingskills.git
+[submodule "skills/productivity/social-media-skills"]
+	path = skills/productivity/social-media-skills
+	url = https://github.com/charlie947/social-media-skills.git

@@ -9,6 +9,7 @@ This directory contains project-specific notes, insights, and activity tracking.
 - **`insights.md`** — Learnings, patterns, and observations captured mid-session
 - **`friction.md`** — Recurring pain points and frustrations
 - **`skills-plan.md`** — Planned or in-progress skill development
+- **`skills-wishlist.md`** — External skills found in the wild, candidates for future incorporation
 - **`reviews/`** — Weekly review summaries
 
 ## Privacy
