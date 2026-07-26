@@ -91,6 +91,13 @@ Tag items with:
 
 ### 5. Write the handover
 
+Before choosing a handover destination, inspect the target repository's
+`AGENTS.md` and any repo-native continuity skill. A repository-declared
+continuity surface takes precedence over this generic skill. When such a
+contract names a canonical handover file, write there and do not create
+`notes/inbox.md`. This prevents a generic Shulkerbox convention from competing
+with project-specific pickup, governance, or memory tooling.
+
 Read `.shulkerbox/config.yml` (`wrap_up.issues.enabled`, default `false`).
 
 **If issues are enabled:** file one GitHub Issue per next-step using
@@ -103,7 +110,9 @@ with this body metadata line:
 ```
 
 **Else (legacy):** prepend a `## Handover — YYYY-MM-DD` section to
-`notes/inbox.md` using the categorized template below.
+the repository-declared handover surface, or to `notes/inbox.md` only when no
+repository-specific continuity contract exists, using the categorized template
+below.
 
 ```markdown
 ## Handover — YYYY-MM-DD
