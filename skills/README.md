@@ -79,6 +79,13 @@ Seed the product spine (`docs/`) from a one-line idea or user story. Populates i
 
 ### Workflow Skills
 
+> **Moved:** `pickup`, `wrap-up`, `handover` and `note-that` now live in
+> [mithril](https://github.com/derrybirkett/mithril), redesigned as one loop
+> (`pickup` → `start` → `note-that` → `wrap-up`) with a worktree per task and
+> per-repo `notes/` for handover, activity log and learnings. `handover` and
+> `activity-log` are folded into mithril's `wrap-up`. The copies below are kept
+> for repos that rely on `.shulkerbox/config.yml` and are no longer developed.
+
 #### wrap-up
 End-of-session workflow. Stages changes, drafts a conventional commit message, runs pre-commit and manifest-drift checks, manages version tags, and handles both PR-based and direct-to-main workflows (PR-based is the bloom default). Optionally updates the changelog, publishes a GitHub release, files next-step issues, and writes the activity log — driven by `.shulkerbox/config.yml`.
 
